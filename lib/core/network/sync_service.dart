@@ -18,7 +18,7 @@ class SyncService {
         'local_id': e['id'],
         'device_id': e['device_id'],
         'occurred_at': e['created_at'],
-        'category_code': e['predicted_category'],
+        'predicted_category_code': e['predicted_category_code'],
         'lang': e['lang'],
       }).toList(),
     };

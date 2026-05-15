@@ -408,7 +408,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                     children: [
                       Text(
                         _categoryDisplay(
-                          incident['predicted_category']?.toString(),
+                          incident['predicted_category_code']?.toString(),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

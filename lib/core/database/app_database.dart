@@ -100,7 +100,7 @@ class AppDatabase {
         created_at TEXT,
         lang TEXT,
         input_text TEXT,
-        predicted_category TEXT,
+        predicted_category_code TEXT,
         confidence REAL,
         urgency TEXT,
         lat REAL,
