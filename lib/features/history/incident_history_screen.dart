@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/database/app_database.dart';
+import '../../core/network/sync_service.dart';
 
 class IncidentHistoryScreen extends StatefulWidget {
   const IncidentHistoryScreen({super.key});
@@ -163,9 +164,22 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+
+          IconButton(
+            tooltip: 'Sync',
+            icon: const Icon(
+              Icons.cloud_upload_rounded,
+              color: Colors.white,
+            ),
+            onPressed: () async {
+              await SyncService.syncIncidents();
+              await _loadIncidents();
+            },
+          ),
+
           IconButton(
             tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: _loadIncidents,
           ),
         ],
