@@ -14,15 +14,21 @@ class SyncService {
 
     // 2. Prepare payload
     final payload = {
+      'device_id': incidents.first['device_id'],
       'incidents': incidents.map((e) => {
         'local_id': e['id'],
-        'device_id': e['device_id'],
-        'occurred_at': e['created_at'],
-        'category_code': e['predicted_category'],
+        'created_at': e['created_at'],
         'lang': e['lang'],
+        'input_text': e['input_text'],
+        'predicted_category_code': e['predicted_category_code'],
+        'confidence': e['confidence'],
+        'urgency': e['urgency'],
+        'lat': e['lat'],
+        'lng': e['lng'],
+        'location_source': e['location_source'],
+        'notes': e['notes'] ?? '',
       }).toList(),
     };
-
 
     try {
       // 3. Send POST request
@@ -34,14 +40,18 @@ class SyncService {
         body: jsonEncode(payload),
       );
 
+      print('Sync payload: ${jsonEncode(payload)}');
       print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       // 4. Handle response
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        if (data['results'] != null) {
-          for (var item in data['results']) {
+        final syncedList = data['synced'] ?? data['results'];
+
+        if (syncedList != null) {
+          for (var item in syncedList) {
             await db.markIncidentSynced(
               item['local_id'],
               item['server_id'],

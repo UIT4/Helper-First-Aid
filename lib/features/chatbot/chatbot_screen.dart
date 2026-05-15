@@ -17,7 +17,7 @@ import '../../core/network/sync_service.dart';
 // OFFLINE CLASSIFIER  (expanded keyword set)
 // =====================================================
 
-class _Classifier {
+class Classifier {
   static const Map<String, Map<String, List<String>>> _keywords = {
     'adult_choking': {
       'en': [
@@ -439,9 +439,11 @@ class _ChatbotScreenState extends State<ChatbotScreen>
 
       await Future.delayed(const Duration(milliseconds: 800));
 
-      final result = _Classifier.predict(
+      final result = Classifier.predict(
         text,
-        forcedLang: _selectedLang == 'auto' ? null : _selectedLang,
+        forcedLang: _selectedLang == 'auto'
+            ? null
+            : _selectedLang,
       );
 
       final category = result['category'] as String;
@@ -460,7 +462,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         'device_id': deviceId,
         'lang': lang,
         'input_text': text,
-        'predicted_category': category,
+        'predicted_category_code': category,
         'confidence': confidence,
         'urgency': urgency,
         'lat': position?.latitude ?? 0.0,
@@ -513,7 +515,13 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         );
       }
     } catch (e) {
-      _showSnackbar('Something went wrong. Please try again.', isError: true);
+      print("ERROR:");
+      print(e);
+
+      _showSnackbar(
+        e.toString(),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {
