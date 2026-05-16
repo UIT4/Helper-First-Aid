@@ -47,6 +47,30 @@ class ResultScreen extends StatelessWidget {
         'en': 'Not Breathing / CPR',
         'ar': 'لا يتنفس / إنعاش',
       },
+      'bleeding': {
+        'en': 'Heavy Bleeding',
+        'ar': 'نزيف شديد',
+      },
+
+      'burns': {
+        'en': 'Burn Injury',
+        'ar': 'حروق',
+      },
+
+      'fracture': {
+        'en': 'Fracture',
+        'ar': 'كسر',
+      },
+
+      'seizure': {
+        'en': 'Seizure',
+        'ar': 'تشنج',
+      },
+
+      'stroke': {
+        'en': 'Stroke',
+        'ar': 'سكتة دماغية',
+      },
       'unknown': {
         'en': 'Unknown',
         'ar': 'غير معروف',
