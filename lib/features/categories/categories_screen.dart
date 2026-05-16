@@ -48,11 +48,15 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       case 'anaphylaxis':           return Icons.warning_amber_rounded;
       case 'unconscious_breathing': return Icons.accessibility_new;
       case 'not_breathing_cpr':     return Icons.favorite;
+      case 'bleeding':              return Icons.bloodtype;
+      case 'burns':                 return Icons.local_fire_department;
+      case 'fracture':              return Icons.healing;
+      case 'seizure':               return Icons.emergency;
+      case 'stroke':                return Icons.psychology;
       default:                      return Icons.medical_services;
     }
   }
 
-  // Color per category
   Color _categoryColor(String code) {
     switch (code) {
       case 'adult_choking':         return const Color(0xFFDC2626);
@@ -61,23 +65,33 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       case 'anaphylaxis':           return const Color(0xFF8B5CF6);
       case 'unconscious_breathing': return const Color(0xFF14B8A6);
       case 'not_breathing_cpr':     return const Color(0xFFDC2626);
+      case 'bleeding':              return const Color(0xFFB91C1C);
+      case 'burns':                 return const Color(0xFFEA580C);
+      case 'fracture':              return const Color(0xFF64748B);
+      case 'seizure':               return const Color(0xFF7C3AED);
+      case 'stroke':                return const Color(0xFFBE123C);
       default:                      return const Color(0xFF475569);
     }
   }
 
-  // Urgency per category
   String _urgencyLabel(String code) {
     switch (code) {
       case 'adult_choking':
       case 'child_choking':
       case 'anaphylaxis':
       case 'not_breathing_cpr':
-        return '🚨 HIGH';
+      case 'seizure':
+      case 'stroke':
+        return ' HIGH';
+
       case 'asthma':
       case 'unconscious_breathing':
-        return '⚠️ MEDIUM';
+      case 'bleeding':
+      case 'burns':
+        return ' MEDIUM';
+
       default:
-        return 'ℹ️ LOW';
+        return ' LOW';
     }
   }
 
@@ -87,10 +101,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       case 'child_choking':
       case 'anaphylaxis':
       case 'not_breathing_cpr':
+      case 'seizure':
+      case 'stroke':
         return const Color(0xFFDC2626);
+
       case 'asthma':
       case 'unconscious_breathing':
+      case 'bleeding':
+      case 'burns':
         return const Color(0xFFF97316);
+
       default:
         return const Color(0xFF16A34A);
     }

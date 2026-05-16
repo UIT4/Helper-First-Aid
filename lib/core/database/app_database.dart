@@ -232,6 +232,11 @@ class AppDatabase {
       {'code': 'anaphylaxis', 'name_en': 'Severe Allergy', 'name_ar': 'حساسية شديدة'},
       {'code': 'unconscious_breathing', 'name_en': 'Unconscious Breathing', 'name_ar': 'فاقد الوعي ويتنفس'},
       {'code': 'not_breathing_cpr', 'name_en': 'Not Breathing / CPR', 'name_ar': 'لا يتنفس / إنعاش'},
+      {'code': 'bleeding', 'name_en': 'Heavy Bleeding', 'name_ar': 'نزيف شديد'},
+      {'code': 'burns', 'name_en': 'Burn Injury', 'name_ar': 'حروق'},
+      {'code': 'fracture', 'name_en': 'Fracture', 'name_ar': 'كسر'},
+      {'code': 'seizure', 'name_en': 'Seizure', 'name_ar': 'تشنج'},
+      {'code': 'stroke', 'name_en': 'Stroke', 'name_ar': 'سكتة دماغية'},
     ];
 
     for (final cat in cats) {

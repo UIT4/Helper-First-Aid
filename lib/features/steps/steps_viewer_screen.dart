@@ -110,13 +110,19 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
 
     final isAr = widget.lang == 'ar';
 
+    final locationText = 'Location unavailable';
+    final notes =
+        profile?['notes']?.toString() ?? 'None';
+
     final body = isAr
         ? 'طارئ: $_categoryName\n'
         'المريض: $age/$sex حساسية:$allergies أمراض:$conditions\n'
-        'الموقع: غير متوفر'
+        'الموقع: $locationText\n'
+        'ملاحظات:$notes'
         : 'EMERGENCY: $_categoryName\n'
         'Patient: $age/$sex Allergies:$allergies Conditions:$conditions\n'
-        'Location: unavailable';
+        'Location: $locationText\n'
+        'Notes: $notes';
 
     _showSmsBottomSheet(fullPhone, body);
   }
