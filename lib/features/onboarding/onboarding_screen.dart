@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../home/home_screen.dart';
+
+import '../auth/login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -19,36 +19,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   final List<Map<String, dynamic>> _pages = [
     {
-      'title': 'Instant Guidance',
-      'titleAr': 'إرشاد فوري',
-      'desc':
-      'Get step-by-step first aid instructions even without internet connection.',
-      'descAr': 'احصل على إرشادات الإسعافات الأولية خطوة بخطوة حتى بدون إنترنت.',
-      'icon': Icons.offline_bolt_rounded,
-      'color': const Color(0xFF2563EB),
-      'bg': const Color(0xFFEFF6FF),
-    },
-    {
-      'title': 'Smart AI Diagnosis',
-      'titleAr': 'تشخيص ذكي',
-      'desc':
-      'Describe the emergency in Arabic or English and our assistant identifies it instantly.',
-      'descAr': 'صف الطارئ بالعربي أو الإنجليزي والمساعد يحدد الحالة فوراً.',
-      'icon': Icons.psychology_rounded,
-      'color': const Color(0xFF8B5CF6),
-      'bg': const Color(0xFFF5F3FF),
-    },
-    {
-      'title': 'Emergency Ready',
-      'titleAr': 'جاهز للطوارئ',
-      'desc':
-      'Call 911, send SMS to emergency contacts with your live location in one tap.',
-      'descAr': 'اتصل بـ 911 أو أرسل رسالة لجهات الطوارئ مع موقعك في نقرة واحدة.',
-      'icon': Icons.emergency_share_rounded,
-      'color': const Color(0xFFDC2626),
-      'bg': const Color(0xFFFFF1F2),
-    },
-    {
       'title': 'Important Disclaimer',
       'titleAr': 'تنبيه مهم',
       'desc':
@@ -58,6 +28,39 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       'icon': Icons.warning_amber_rounded,
       'color': const Color(0xFFF97316),
       'bg': const Color(0xFFFFF7ED),
+    },
+    {
+      'title': 'Emergency Ready',
+      'titleAr': 'جاهز للطوارئ',
+      'desc':
+      'Call emergency services and send SMS to emergency contacts quickly when help is needed.',
+      'descAr':
+      'اتصل بالطوارئ وأرسل رسالة لجهات الاتصال بسرعة عند الحاجة للمساعدة.',
+      'icon': Icons.emergency_share_rounded,
+      'color': const Color(0xFFDC2626),
+      'bg': const Color(0xFFFFF1F2),
+    },
+    {
+      'title': 'Instant Guidance',
+      'titleAr': 'إرشاد فوري',
+      'desc':
+      'Get step-by-step first aid instructions even without internet connection.',
+      'descAr':
+      'احصل على إرشادات الإسعافات الأولية خطوة بخطوة حتى بدون إنترنت.',
+      'icon': Icons.offline_bolt_rounded,
+      'color': const Color(0xFF2563EB),
+      'bg': const Color(0xFFEFF6FF),
+    },
+    {
+      'title': 'Smart AI Diagnosis',
+      'titleAr': 'تشخيص ذكي',
+      'desc':
+      'Describe the emergency in Arabic or English and the assistant identifies the case instantly.',
+      'descAr':
+      'صف الحالة الطارئة بالعربي أو الإنجليزي والمساعد يحدد الحالة فوراً.',
+      'icon': Icons.psychology_rounded,
+      'color': const Color(0xFF8B5CF6),
+      'bg': const Color(0xFFF5F3FF),
     },
   ];
 
@@ -86,18 +89,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     HapticFeedback.selectionClick();
   }
 
-  Future<void> _finishOnboarding() async {
+  void _goToLogin() {
     HapticFeedback.mediumImpact();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('seenOnboarding', true);
-
-    if (!mounted) return;
 
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 500),
-        pageBuilder: (_, __, ___) => const HomeScreen(),
+        transitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (_, __, ___) => const LoginScreen(),
         transitionsBuilder: (_, anim, __, child) =>
             FadeTransition(opacity: anim, child: child),
       ),
@@ -106,16 +105,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _goNext() {
     HapticFeedback.selectionClick();
+
+    if (_currentIndex == _pages.length - 1) {
+      _goToLogin();
+      return;
+    }
+
     _pageController.nextPage(
       duration: const Duration(milliseconds: 350),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  void _skip() {
-    _pageController.animateToPage(
-      _pages.length - 1,
-      duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOut,
     );
   }
@@ -161,17 +158,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ),
                     ],
                   ),
-                  if (!isLast)
-                    TextButton(
-                      onPressed: _skip,
-                      child: const Text(
-                        'Skip',
-                        style: TextStyle(
-                          color: Color(0xFF475569),
-                          fontWeight: FontWeight.w600,
-                        ),
+                  TextButton(
+                    onPressed: _goToLogin,
+                    child: const Text(
+                      'Skip',
+                      style: TextStyle(
+                        color: Color(0xFF475569),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                  ),
                 ],
               ),
             ),
@@ -216,7 +212,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     width: double.infinity,
                     height: 58,
                     child: ElevatedButton(
-                      onPressed: isLast ? _finishOnboarding : _goNext,
+                      onPressed: _goNext,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: accent,
                         foregroundColor: Colors.white,
@@ -229,7 +225,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            isLast ? 'I Understand' : 'Next',
+                            isLast ? 'Start Now' : 'Next',
                             style: const TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
@@ -238,7 +234,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           const SizedBox(width: 8),
                           Icon(
                             isLast
-                                ? Icons.check_circle_rounded
+                                ? Icons.login_rounded
                                 : Icons.arrow_forward_rounded,
                             size: 20,
                           ),
