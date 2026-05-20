@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class Tables {
+  static const users = 'users';
   static const categories = 'categories';
   static const guidanceSteps = 'guidance_steps';
   static const patient = 'patient_profile';
@@ -26,7 +27,7 @@ class AppDatabase {
     String path = join(await getDatabasesPath(), 'rescue_v2.db');
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -40,15 +41,26 @@ class AppDatabase {
   // =====================================================
 
   Future<void> _createDB(Database db, int version) async {
-    // CATEGORIES
+    // USERS
     await db.execute('''
-      CREATE TABLE ${Tables.categories}(
+      CREATE TABLE ${Tables.users}(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        code TEXT UNIQUE,
-        name_en TEXT,
-        name_ar TEXT
+        full_name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        created_at TEXT NOT NULL
       )
     ''');
+
+    // CATEGORIES
+    await db.execute('''
+  CREATE TABLE ${Tables.categories}(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT UNIQUE,
+    name_en TEXT,
+    name_ar TEXT
+   )
+ ''');
 
     // GUIDANCE STEPS
     await db.execute('''
@@ -148,13 +160,11 @@ class AppDatabase {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 3) {
-      // Add missing columns to patient_profile
       await db.execute('ALTER TABLE ${Tables.patient} ADD COLUMN sex TEXT');
       await db.execute('ALTER TABLE ${Tables.patient} ADD COLUMN conditions TEXT');
       await db.execute('ALTER TABLE ${Tables.patient} ADD COLUMN medications TEXT');
       await db.execute('ALTER TABLE ${Tables.patient} ADD COLUMN notes TEXT');
 
-      // Add missing columns to incidents
       await db.execute('ALTER TABLE ${Tables.incidents} ADD COLUMN device_id TEXT');
       await db.execute('ALTER TABLE ${Tables.incidents} ADD COLUMN lang TEXT');
       await db.execute('ALTER TABLE ${Tables.incidents} ADD COLUMN lat REAL');
@@ -164,50 +174,53 @@ class AppDatabase {
       await db.execute('ALTER TABLE ${Tables.incidents} ADD COLUMN synced INTEGER DEFAULT 0');
       await db.execute('ALTER TABLE ${Tables.incidents} ADD COLUMN server_id INTEGER');
 
-      // Create new tables
       await db.execute('''
-        CREATE TABLE IF NOT EXISTS ${Tables.categories}(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          code TEXT UNIQUE,
-          name_en TEXT,
-          name_ar TEXT
-        )
-      ''');
+      CREATE TABLE IF NOT EXISTS ${Tables.categories}(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE,
+        name_en TEXT,
+        name_ar TEXT
+      )
+    ''');
 
       await db.execute('''
-        CREATE TABLE IF NOT EXISTS ${Tables.guidanceSteps}(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          category_code TEXT,
-          step_no INTEGER,
-          title_en TEXT,
-          title_ar TEXT,
-          body_en TEXT,
-          body_ar TEXT,
-          image_asset TEXT,
-          updated_at TEXT,
-          FOREIGN KEY (category_code) REFERENCES ${Tables.categories}(code)
-        )
-      ''');
+      CREATE TABLE IF NOT EXISTS ${Tables.guidanceSteps}(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category_code TEXT,
+        step_no INTEGER,
+        title_en TEXT,
+        title_ar TEXT,
+        body_en TEXT,
+        body_ar TEXT,
+        image_asset TEXT,
+        updated_at TEXT,
+        FOREIGN KEY (category_code) REFERENCES ${Tables.categories}(code)
+      )
+    ''');
 
       await db.execute('''
-        CREATE TABLE IF NOT EXISTS ${Tables.settings}(
-          id INTEGER PRIMARY KEY,
-          language TEXT DEFAULT 'en',
-          emergency_number TEXT DEFAULT '911',
-          ambulance_number TEXT DEFAULT '193',
-          fire_number TEXT DEFAULT '199',
-          country_code TEXT DEFAULT '+962'
-        )
-      ''');
+      CREATE TABLE IF NOT EXISTS ${Tables.settings}(
+        id INTEGER PRIMARY KEY,
+        language TEXT DEFAULT 'en',
+        emergency_number TEXT DEFAULT '911',
+        ambulance_number TEXT DEFAULT '193',
+        fire_number TEXT DEFAULT '199',
+        country_code TEXT DEFAULT '+962'
+      )
+    ''');
 
-      await db.insert(Tables.settings, {
-        'id': 1,
-        'language': 'en',
-        'emergency_number': '911',
-        'ambulance_number': '193',
-        'fire_number': '199',
-        'country_code': '+962',
-      });
+      await db.insert(
+        Tables.settings,
+        {
+          'id': 1,
+          'language': 'en',
+          'emergency_number': '911',
+          'ambulance_number': '193',
+          'fire_number': '199',
+          'country_code': '+962',
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
 
       await _insertDefaultCategories(db);
       await _insertDefaultSteps(db);
@@ -217,6 +230,18 @@ class AppDatabase {
       await db.execute(
         'ALTER TABLE ${Tables.settings} ADD COLUMN content_version INTEGER DEFAULT 1',
       );
+    }
+
+    if (oldVersion < 5) {
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS ${Tables.users}(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        full_name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
     }
   }
 
@@ -468,6 +493,60 @@ class AppDatabase {
       where: 'id = ?',
       whereArgs: [1],
     );
+  }
+
+  // =====================================================
+// USERS AUTH
+// =====================================================
+
+  Future<int> insertUser({
+    required String fullName,
+    required String email,
+    required String password,
+  }) async {
+    final db = await instance.database;
+
+    return await db.insert(
+      Tables.users,
+      {
+        'full_name': fullName,
+        'email': email,
+        'password': password,
+        'created_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.abort,
+    );
+  }
+
+  Future<Map<String, dynamic>?> getUserByEmail(String email) async {
+    final db = await instance.database;
+
+    final result = await db.query(
+      Tables.users,
+      where: 'email = ?',
+      whereArgs: [email],
+      limit: 1,
+    );
+
+    if (result.isEmpty) return null;
+    return result.first;
+  }
+
+  Future<Map<String, dynamic>?> loginUser({
+    required String email,
+    required String password,
+  }) async {
+    final db = await instance.database;
+
+    final result = await db.query(
+      Tables.users,
+      where: 'email = ? AND password = ?',
+      whereArgs: [email, password],
+      limit: 1,
+    );
+
+    if (result.isEmpty) return null;
+    return result.first;
   }
 
   // =====================================================

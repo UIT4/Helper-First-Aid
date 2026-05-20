@@ -12,7 +12,7 @@ import '../categories/categories_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import '../../core/network/sync_service.dart';
-
+import '../auth/login_screen.dart';
 // =====================================================
 // OFFLINE CLASSIFIER  (expanded keyword set)
 // =====================================================
@@ -254,6 +254,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
   bool _isLoading = false;
   String _selectedLang  = 'auto';
   bool _inputFocused    = false;
+  bool isGuest = false;
   final FocusNode _focusNode = FocusNode();
 
   // Quick suggestion chips
@@ -273,8 +274,21 @@ class _ChatbotScreenState extends State<ChatbotScreen>
   @override
   void initState() {
     super.initState();
+
+    _loadGuestStatus();
+
     _focusNode.addListener(() {
-      setState(() => _inputFocused = _focusNode.hasFocus);
+      setState(() {
+        _inputFocused = _focusNode.hasFocus;
+      });
+    });
+  }
+
+  Future<void> _loadGuestStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      isGuest = prefs.getBool('isGuest') ?? false;
     });
   }
 
@@ -329,9 +343,28 @@ class _ChatbotScreenState extends State<ChatbotScreen>
             const Text('Select Language',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            _langOption('auto', '🌐', 'Auto Detect',  'يكتشف اللغة تلقائياً'),
-            _langOption('en',   '🇬🇧', 'English',      'الإنجليزية'),
-            _langOption('ar',   '🇯🇴', 'العربية',      'Arabic'),
+            _langOption(
+              'auto',
+              '',
+              _langIsAr ? 'تلقائي' : 'Auto Detect',
+              _langIsAr
+                  ? 'كشف اللغة تلقائياً'
+                  : 'Detect language automatically',
+            ),
+
+            _langOption(
+              'en',
+              '',
+              _langIsAr ? 'الإنجليزية' : 'English',
+              _langIsAr ? 'لغة إنجليزية' : 'English Language',
+            ),
+
+            _langOption(
+              'ar',
+              '',
+              _langIsAr ? 'العربية' : 'Arabic',
+              _langIsAr ? 'لغة عربية' : 'Arabic Language',
+            ),
           ],
         ),
       ),
@@ -781,9 +814,21 @@ class _ChatbotScreenState extends State<ChatbotScreen>
       iconTheme: const IconThemeData(color: Colors.white),
       title: Column(
         children: [
-          const Text('Rescue Assistant',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16)),
+          Text(
+            isGuest
+                ? (_langIsAr
+                ? 'مساعد الإسعاف (ضيف)'
+                : 'Rescue Assistant (Guest)')
+                : (_langIsAr
+                ? 'مساعد الإسعاف'
+                : 'Rescue Assistant'),
+
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 16,
+            ),
+          ),
           Text(
             _selectedLang == 'ar'
                 ? '🇯🇴 العربية'
@@ -795,15 +840,50 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         ],
       ),
       actions: [
+
+        if(isGuest)
+          IconButton(
+            icon: const Icon(
+              Icons.login,
+              color: Colors.white,
+            ),
+
+            onPressed: () async {
+
+              final prefs =
+              await SharedPreferences.getInstance();
+
+              await prefs.setBool(
+                'isGuest',
+                false,
+              );
+
+              if(!mounted) return;
+
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                  const LoginScreen(),
+                ),
+              );
+            },
+          ),
+
         IconButton(
-          icon: const Icon(Icons.language, color: Colors.white),
+          icon: const Icon(
+            Icons.language,
+            color: Colors.white,
+          ),
           onPressed: _showLanguageMenu,
-          tooltip: 'Language',
         ),
+
         IconButton(
-          icon: const Icon(Icons.call, color: Colors.white),
+          icon: const Icon(
+            Icons.call,
+            color: Colors.white,
+          ),
           onPressed: _callEmergency,
-          tooltip: 'Call Emergency',
         ),
       ],
     );

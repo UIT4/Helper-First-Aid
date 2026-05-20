@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/database/app_database.dart';
+import '../auth/login_screen.dart';
 
 // تعديل اسم الكلاس ليتوافق مع الاستدعاءات الخارجية في home_screen وغيرها
 class SettingsScreen extends StatefulWidget {
@@ -15,12 +18,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _fireCtrl = TextEditingController();
   final _countryCtrl = TextEditingController();
 
-  String _language = 'auto'; 
-  String _selectedCountry = 'Jordan'; 
+  String _language = 'auto';
+  String _selectedCountry = 'Jordan';
+
   bool _largeText = false;
   bool _isLoading = true;
   bool _isSaving = false;
   bool _showAdvanced = false;
+
+  bool get isArabic => _language == 'ar';
 
   @override
   void initState() {
@@ -45,31 +51,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       setState(() {
         final savedLang = settings['language'] ?? 'auto';
-        if (savedLang == 'en' || savedLang == 'ar' || savedLang == 'auto') {
-          _language = savedLang;
-        } else {
-          _language = 'auto';
-        }
+        _language = ['en', 'ar', 'auto'].contains(savedLang) ? savedLang : 'auto';
 
         final savedCountry = settings['country'] ?? 'Jordan';
-        if (savedCountry == 'Jordan' || savedCountry == 'Other') {
-          _selectedCountry = savedCountry;
-        } else {
-          _selectedCountry = 'Jordan';
-        }
+        _selectedCountry =
+        ['Jordan', 'Other'].contains(savedCountry) ? savedCountry : 'Jordan';
 
         _emergencyCtrl.text = settings['emergency_number'] ?? '911';
         _ambulanceCtrl.text = settings['ambulance_number'] ?? '193';
         _fireCtrl.text = settings['fire_number'] ?? '199';
         _countryCtrl.text = settings['country_code'] ?? '+962';
+
         _largeText = (settings['large_text'] ?? 0) == 1;
         _isLoading = false;
       });
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showSnackbar('حدث خطأ أثناء تحميل البيانات', isError: true);
-      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showSnackbar(
+        isArabic ? 'حدث خطأ أثناء تحميل البيانات' : 'Error loading settings',
+        isError: true,
+      );
     }
   }
 
@@ -94,13 +96,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
 
       if (!mounted) return;
+
       setState(() => _isSaving = false);
-      _showSnackbar('تم حفظ الإعدادات بنجاح ✓');
-    } catch (e) {
+      _showSnackbar(isArabic ? 'تم حفظ الإعدادات بنجاح ✓' : 'Settings saved ✓');
+    } catch (_) {
       if (!mounted) return;
+
       setState(() => _isSaving = false);
-      _showSnackbar('فشل الحفظ: تأكد من قاعدة البيانات', isError: true);
+      _showSnackbar(
+        isArabic ? 'فشل الحفظ: تأكد من قاعدة البيانات' : 'Save failed: check database',
+        isError: true,
+      );
     }
+  }
+
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          isArabic ? 'تسجيل الخروج' : 'Logout',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          isArabic
+              ? 'هل أنت متأكد أنك تريد تسجيل الخروج؟'
+              : 'Are you sure you want to logout?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              isArabic ? 'تسجيل الخروج' : 'Logout',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', false);
+    await prefs.setBool('isGuest', false);
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+    );
   }
 
   void _showSnackbar(String msg, {bool isError = false}) {
@@ -122,13 +177,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
-          title: const Text(
-            'الملف الشخصي والإعدادات',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          title: Text(
+            isArabic ? 'الملف الشخصي والإعدادات' : 'Profile & Settings',
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
           ),
           backgroundColor: const Color(0xFF2563EB),
           centerTitle: true,
@@ -138,99 +193,145 @@ class _SettingsScreenState extends State<SettingsScreen> {
         body: _isLoading
             ? const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)))
             : SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _sectionTitle('تفضيلات اللغة', Icons.language),
-                    const SizedBox(height: 12),
-                    _buildLanguageDropdownCard(),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionTitle(
+                isArabic ? 'تفضيلات اللغة' : 'Language Preferences',
+                Icons.language,
+              ),
+              const SizedBox(height: 12),
+              _buildLanguageDropdownCard(),
 
-                    const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-                    _sectionTitle('الدولة وأرقام الطوارئ', Icons.public),
-                    const SizedBox(height: 12),
-                    _buildCountrySelectorCard(),
+              _sectionTitle(
+                isArabic ? 'الدولة وأرقام الطوارئ' : 'Country & Emergency Numbers',
+                Icons.public,
+              ),
+              const SizedBox(height: 12),
+              _buildCountrySelectorCard(),
 
-                    const SizedBox(height: 14),
+              const SizedBox(height: 14),
 
-                    _buildNumberCard(
-                      label: 'رقم الطوارئ الموحد',
-                      controller: _emergencyCtrl,
-                      icon: Icons.call,
-                      color: const Color(0xFFDC2626),
-                      hint: 'الافتراضي: 911',
-                      description: 'يستخدم للاتصال والرسائل في التطبيق',
+              _buildNumberCard(
+                label: isArabic ? 'رقم الطوارئ الموحد' : 'Emergency Number',
+                controller: _emergencyCtrl,
+                icon: Icons.call,
+                color: const Color(0xFFDC2626),
+                hint: isArabic ? 'الافتراضي: 911' : 'Default: 911',
+                description: isArabic
+                    ? 'يستخدم للاتصال والرسائل في التطبيق'
+                    : 'Used for calls and emergency messages',
+              ),
+
+              const SizedBox(height: 14),
+              _buildCountryCodeCard(),
+
+              const SizedBox(height: 24),
+
+              _sectionTitle(
+                isArabic ? 'سهولة الاستخدام' : 'Accessibility',
+                Icons.accessibility_new,
+              ),
+              const SizedBox(height: 12),
+              _buildLargeTextCard(),
+
+              const SizedBox(height: 24),
+              _buildAdvancedToggle(),
+
+              if (_showAdvanced) ...[
+                const SizedBox(height: 14),
+                _buildNumberCard(
+                  label: isArabic ? 'الإسعاف' : 'Ambulance',
+                  controller: _ambulanceCtrl,
+                  icon: Icons.local_hospital,
+                  color: const Color(0xFFF97316),
+                  hint: isArabic ? 'الافتراضي: 193' : 'Default: 193',
+                  description: isArabic ? 'رقم الإسعاف الاختياري' : 'Optional ambulance number',
+                ),
+                const SizedBox(height: 14),
+                _buildNumberCard(
+                  label: isArabic ? 'الدفاع المدني / الإطفاء' : 'Fire Department',
+                  controller: _fireCtrl,
+                  icon: Icons.local_fire_department,
+                  color: const Color(0xFFF97316),
+                  hint: isArabic ? 'الافتراضي: 199' : 'Default: 199',
+                  description: isArabic ? 'رقم الإطفاء الاختياري' : 'Optional fire department number',
+                ),
+              ],
+
+              const SizedBox(height: 28),
+
+              SizedBox(
+                width: double.infinity,
+                height: 58,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
-
-                    const SizedBox(height: 14),
-                    _buildCountryCodeCard(),
-
-                    const SizedBox(height: 24),
-
-                    _sectionTitle('سهولة الاستخدام', Icons.accessibility_new),
-                    const SizedBox(height: 12),
-                    _buildLargeTextCard(),
-
-                    const SizedBox(height: 24),
-
-                    _buildAdvancedToggle(),
-
-                    if (_showAdvanced) ...[
-                      const SizedBox(height: 14),
-                      _buildNumberCard(
-                        label: 'الإسعاف',
-                        controller: _ambulanceCtrl,
-                        icon: Icons.local_hospital,
-                        color: const Color(0xFFF97316),
-                        hint: 'الافتراضي: 193',
-                        description: 'رقم الإسعاف الاختياري',
-                      ),
-                      const SizedBox(height: 14),
-                      _buildNumberCard(
-                        label: 'الدفاع المدني (الإطفاء)',
-                        controller: _fireCtrl,
-                        icon: Icons.local_fire_department,
-                        color: const Color(0xFFF97316),
-                        hint: 'الافتراضي: 199',
-                        description: 'رقم الإطفاء الاختياري',
-                      ),
-                    ],
-
-                    const SizedBox(height: 28),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 58,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                        ),
-                        onPressed: _isSaving ? null : _saveSettings,
-                        icon: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : const Icon(Icons.save, color: Colors.white),
-                        label: Text(
-                          _isSaving ? 'جاري الحفظ...' : 'حفظ التغييرات',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ),
+                    elevation: 2,
+                  ),
+                  onPressed: _isSaving ? null : _saveSettings,
+                  icon: _isSaving
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
                     ),
-
-                    const SizedBox(height: 28),
-                    _buildDisclaimerCard(),
-                    const SizedBox(height: 20),
-                  ],
+                  )
+                      : const Icon(Icons.save, color: Colors.white),
+                  label: Text(
+                    _isSaving
+                        ? (isArabic ? 'جاري الحفظ...' : 'Saving...')
+                        : (isArabic ? 'حفظ التغييرات' : 'Save Changes'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ),
+
+              const SizedBox(height: 14),
+
+              _buildLogoutButton(),
+
+              const SizedBox(height: 28),
+              _buildDisclaimerCard(),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Color(0xFFDC2626), width: 1.4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        onPressed: _logout,
+        icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
+        label: Text(
+          isArabic ? 'تسجيل الخروج' : 'Logout',
+          style: const TextStyle(
+            color: Color(0xFFDC2626),
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
       ),
     );
   }
@@ -258,30 +359,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: _cardDecoration(),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.translate, color: Color(0xFF2563EB), size: 24),
-          ),
+          _iconBox(Icons.translate, const Color(0xFF2563EB)),
           const SizedBox(width: 14),
           Expanded(
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _language,
                 isExpanded: true,
-                items: const [
-                  DropdownMenuItem(value: 'auto', child: Text('تحديد تلقائي (Auto Detect)', style: TextStyle(fontWeight: FontWeight.w600))),
-                  DropdownMenuItem(value: 'en', child: Text('English')),
-                  DropdownMenuItem(value: 'ar', child: Text('العربية')),
+                items: [
+                  DropdownMenuItem(
+                    value: 'auto',
+                    child: Text(isArabic ? 'تحديد تلقائي' : 'Auto Detect'),
+                  ),
+                  const DropdownMenuItem(value: 'en', child: Text('English')),
+                  const DropdownMenuItem(value: 'ar', child: Text('العربية')),
                 ],
                 onChanged: (newValue) {
                   if (newValue != null) {
-                    setState(() {
-                      _language = newValue;
-                    });
+                    setState(() => _language = newValue);
                   }
                 },
               ),
@@ -298,23 +393,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: _cardDecoration(),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.public_rounded, color: Color(0xFF2563EB), size: 24),
-          ),
+          _iconBox(Icons.public_rounded, const Color(0xFF2563EB)),
           const SizedBox(width: 14),
           Expanded(
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _selectedCountry,
                 isExpanded: true,
-                items: const [
-                  DropdownMenuItem(value: 'Jordan', child: Text('الأردن (Jordan)', style: TextStyle(fontWeight: FontWeight.w600))),
-                  DropdownMenuItem(value: 'Other', child: Text('دولة أخرى (Other)')),
+                items: [
+                  DropdownMenuItem(
+                    value: 'Jordan',
+                    child: Text(isArabic ? 'الأردن' : 'Jordan'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Other',
+                    child: Text(isArabic ? 'دولة أخرى' : 'Other Country'),
+                  ),
                 ],
                 onChanged: (newValue) {
                   if (newValue != null) {
@@ -347,20 +441,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: _cardDecoration(),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
+          _iconBox(icon, color),
           const SizedBox(width: 14),
           Expanded(
             child: TextField(
               controller: controller,
               keyboardType: TextInputType.phone,
-              textAlign: TextAlign.right,
+              textAlign: isArabic ? TextAlign.right : TextAlign.left,
               style: TextStyle(fontSize: _titleSize, fontWeight: FontWeight.w600),
               decoration: InputDecoration(
                 labelText: label,
@@ -382,25 +469,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: _cardDecoration(),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.pin_rounded, color: Color(0xFF2563EB), size: 24),
-          ),
+          _iconBox(Icons.pin_rounded, const Color(0xFF2563EB)),
           const SizedBox(width: 14),
           Expanded(
             child: TextField(
               controller: _countryCtrl,
               keyboardType: TextInputType.phone,
-              textAlign: TextAlign.right,
+              textAlign: isArabic ? TextAlign.right : TextAlign.left,
               style: TextStyle(fontSize: _titleSize, fontWeight: FontWeight.w600),
-              decoration: const InputDecoration(
-                labelText: 'رمز الدولة',
+              decoration: InputDecoration(
+                labelText: isArabic ? 'رمز الدولة' : 'Country Code',
                 hintText: '+962',
-                helperText: 'يستخدم قبل أرقام الهواتف',
+                helperText: isArabic
+                    ? 'يستخدم قبل أرقام الهواتف'
+                    : 'Used before phone numbers',
                 border: InputBorder.none,
               ),
             ),
@@ -418,25 +500,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         contentPadding: EdgeInsets.zero,
         value: _largeText,
         activeColor: const Color(0xFF2563EB),
-        onChanged: (value) {
-          setState(() {
-            _largeText = value;
-          });
-        },
-        secondary: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2563EB).withOpacity(0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.text_fields, color: Color(0xFF2563EB)),
-        ),
+        onChanged: (value) => setState(() => _largeText = value),
+        secondary: _iconBox(Icons.text_fields, const Color(0xFF2563EB)),
         title: Text(
-          'وضع النص الكبير',
-          style: TextStyle(fontSize: _titleSize, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
+          isArabic ? 'وضع النص الكبير' : 'Large Text Mode',
+          style: TextStyle(
+            fontSize: _titleSize,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF0F172A),
+          ),
         ),
         subtitle: Text(
-          'تكبير حجم الخط لتسهيل القراءة',
+          isArabic ? 'تكبير حجم الخط لتسهيل القراءة' : 'Increase font size for easier reading',
           style: TextStyle(fontSize: _bodySize, color: const Color(0xFF64748B)),
         ),
       ),
@@ -446,11 +521,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildAdvancedToggle() {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: () {
-        setState(() {
-          _showAdvanced = !_showAdvanced;
-        });
-      },
+      onTap: () => setState(() => _showAdvanced = !_showAdvanced),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: _cardDecoration(),
@@ -460,8 +531,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'أرقام طوارئ إضافية ومتقدمة',
-                style: TextStyle(fontSize: _titleSize, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
+                isArabic ? 'أرقام طوارئ إضافية ومتقدمة' : 'Advanced Emergency Numbers',
+                style: TextStyle(
+                  fontSize: _titleSize,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF0F172A),
+                ),
               ),
             ),
             Icon(
@@ -489,12 +564,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'يقدم هذا التطبيق إرشادات طوارئ فقط. ولا يعتبر بديلاً عن المساعدة الطبية المهنية المتخصصة.',
-              style: TextStyle(fontSize: _bodySize, color: const Color(0xFF7C2D12), height: 1.5),
+              isArabic
+                  ? 'يقدم هذا التطبيق إرشادات طوارئ فقط. ولا يعتبر بديلاً عن المساعدة الطبية المهنية المتخصصة.'
+                  : 'This app provides emergency guidance only. It is not a substitute for professional medical help.',
+              style: TextStyle(
+                fontSize: _bodySize,
+                color: const Color(0xFF7C2D12),
+                height: 1.5,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _iconBox(IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: color, size: 24),
     );
   }
 
