@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/database/app_database.dart';
 import '../auth/login_screen.dart';
 
+// تعديل اسم الكلاس ليتوافق مع الاستدعاءات الخارجية في home_screen وغيرها
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -162,9 +163,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
-        backgroundColor:
-        isError ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+        content: Text(msg, style: const TextStyle(fontFamily: 'Roboto')),
+        backgroundColor: isError ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -451,6 +451,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(fontSize: _titleSize, fontWeight: FontWeight.w600),
               decoration: InputDecoration(
                 labelText: label,
+                alignLabelWithHint: true,
                 hintText: hint,
                 helperText: description,
                 border: InputBorder.none,
@@ -594,11 +595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.04),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
+        BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
       ],
     );
   }
