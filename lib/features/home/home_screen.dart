@@ -11,6 +11,7 @@ import '../history/incident_history_screen.dart';
 import '../settings/settings_screen.dart';
 import '../../core/network/content_update_service.dart';
 
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -22,6 +23,50 @@ class _HomeScreenState extends State<HomeScreen> {
   String _emergencyNumber = '911';
   bool _isPressed = false;
   bool _isCheckingUpdates = false;
+
+// دالة التعامل الذكي مع الحالات الخطيرة والحرجة
+  Future<void> _handleHighUrgencyCase({
+    required String phoneNumber, 
+    required String messageBody,
+    bool isDirectCall = true, 
+  }) async {
+    if (isDirectCall) {
+      // فتح شاشة الاتصال بالرقم فوراً
+      final Uri callUri = Uri(scheme: 'tel', path: phoneNumber);
+      if (await canLaunchUrl(callUri)) {
+        await launchUrl(callUri);
+      } else {
+        _showSnackbar('تعذر إجراء مكالمة الطوارئ للرقم: $phoneNumber', isError: true);
+      }
+    } else {
+      // تجهيز رسالة SMS تحتوي على تفاصيل الاستغاثة
+      final Uri smsUri = Uri(
+        scheme: 'sms',
+        path: phoneNumber,
+        queryParameters: <String, String>{
+          'body': messageBody,
+        },
+      );
+      
+      if (await canLaunchUrl(smsUri)) {
+        await launchUrl(smsUri);
+      } else {
+        _showSnackbar('تعذر تجهيز رسالة الطوارئ', isError: true);
+      }
+    }
+  }
+
+  // دالة مساعدة لإظهار رسائل التحذير (Snackbar) في شاشة الـ Home
+  void _showSnackbar(String msg, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -98,13 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () => _openScreen(const SettingsScreen()),
-          ),
-        ],
+       
       ),
       drawer: _buildDrawer(),
       body: RefreshIndicator(
@@ -246,30 +285,43 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildEmergencyCallButton() {
     return InkWell(
-      borderRadius: BorderRadius.circular(22),
-      onTap: _callEmergency,
+      borderRadius: BorderRadius.circular(16),
+      // 1. عند الضغط العادي: اتصال فوري ومباشر
+      onTap: () {
+        _handleHighUrgencyCase(
+          phoneNumber: _emergencyNumber, // الرقم المجلوب ديناميكياً من قاعدة البيانات
+          messageBody: '',
+          isDirectCall: true, // توجيه مالي لشاشة الاتصال فوراً
+        );
+      },
+      // 2. عند الضغط المطول: تجهيز رسالة استغاثة طوارئ تلقائية
+      onLongPress: () {
+        _handleHighUrgencyCase(
+          phoneNumber: _emergencyNumber,
+          messageBody: 'حالة طارئة حرجة! أطلب المساعدة الفورية، تم إرسال طلب استغاثة عبر التطبيق.',
+          isDirectCall: false, // لتجهيز وإرسال الرسالة النصية SMS
+        );
+      },
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFFFECACA)),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              width: 54,
-              height: 54,
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEE2E2),
-                borderRadius: BorderRadius.circular(16),
+                color: const Color(0xFFDC2626).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
                 Icons.call,
@@ -313,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
+    }
 
   Widget _buildSectionHeader({
     required String title,
@@ -596,7 +648,7 @@ class _HomeScreenState extends State<HomeScreen> {
               title: 'Settings',
               onTap: () {
                 Navigator.pop(context);
-                _openScreen(const SettingsScreen());
+              _openScreen(const SettingsScreen());
               },
             ),
 
