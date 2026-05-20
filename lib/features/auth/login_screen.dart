@@ -19,6 +19,11 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _rememberMe = false;
   bool _isArabic = false;
 
+  static const Color primary = Color(0xFF2563EB);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color danger = Color(0xFFDC2626);
+  static const Color success = Color(0xFF16A34A);
+
   @override
   void dispose() {
     _emailCtrl.dispose();
@@ -32,7 +37,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   bool _isValidPassword(String password) {
-    final regex = RegExp(r'^\d{6,}$');
+    final regex = RegExp(
+      r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$',
+    );
     return regex.hasMatch(password);
   }
 
@@ -63,8 +70,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_isValidPassword(password)) {
       _showSnack(
         _isArabic
-            ? 'كلمة المرور يجب أن تكون 6 أرقام على الأقل'
-            : 'Password must be at least 6 numbers',
+            ? 'كلمة المرور يجب أن تكون 8 خانات على الأقل وتحتوي حرف ورقم ورمز'
+            : 'Password must be 8+ chars with letters, numbers, and special character',
         isError: true,
       );
       return;
@@ -133,6 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
@@ -151,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Icon(
                   Icons.lock_reset_rounded,
                   size: 50,
-                  color: Color(0xFF0F4C81),
+                  color: primary,
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -159,290 +167,35 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _isArabic
-                      ? 'اختر طريقة استعادة كلمة المرور.'
-                      : 'Choose how you want to reset your password.',
+                      ? 'استرجاع كلمة المرور متاح عبر رقم الهاتف فقط.'
+                      : 'Password reset is available by phone number only.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Color(0xFF64748B)),
                 ),
                 const SizedBox(height: 20),
-
-                _resetOption(
-                  icon: Icons.email_outlined,
-                  title: _isArabic
-                      ? 'إرسال الرمز إلى الإيميل'
-                      : 'Send code to Email',
-                  subtitle: _isArabic
-                      ? 'يحتاج Backend لإرسال رمز إلى البريد'
-                      : 'Needs backend endpoint to send email code',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showSnack(
-                      _isArabic
-                          ? 'تحتاج Backend لإرسال رمز الإيميل'
-                          : 'Email reset code needs backend endpoint',
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 12),
 
                 _resetOption(
                   icon: Icons.sms_outlined,
                   title: _isArabic
-                      ? 'إرسال الرمز إلى الهاتف'
-                      : 'Send code to Phone',
+                      ? 'استرجاع بواسطة رقم الهاتف'
+                      : 'Reset by Phone Number',
                   subtitle: _isArabic
-                      ? 'يحتاج خدمة SMS و Backend'
-                      : 'Needs backend/SMS service',
+                      ? 'سيتم إرسال رمز تحقق للهاتف لاحقاً'
+                      : 'Verification code will be sent by SMS later',
                   onTap: () {
                     Navigator.pop(context);
                     _showSnack(
                       _isArabic
-                          ? 'تحتاج خدمة SMS و Backend'
-                          : 'SMS reset code needs backend/SMS service',
+                          ? 'ربط خدمة SMS لاحقاً'
+                          : 'SMS service will be connected later',
                     );
                   },
-                ),
-
-                const SizedBox(height: 12),
-
-                _resetOption(
-                  icon: Icons.pin_rounded,
-                  title: _isArabic
-                      ? 'تغيير باستخدام رمز 4 أرقام'
-                      : 'Reset with 4-digit PIN',
-                  subtitle: _isArabic
-                      ? 'استخدم رمز الاسترجاع الذي وضعته عند إنشاء الحساب'
-                      : 'Use the recovery PIN created during sign up',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _resetWithPin();
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _resetWithPin() {
-    final emailCtrl = TextEditingController();
-    final pinCtrl = TextEditingController();
-    final newPassCtrl = TextEditingController();
-    final confirmPassCtrl = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (_) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 22,
-            right: 22,
-            top: 22,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 22,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.pin_rounded,
-                  size: 50,
-                  color: Color(0xFF0F4C81),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _isArabic ? 'تغيير كلمة المرور' : 'Change Password',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _isArabic
-                      ? 'أدخل البريد ورمز الاسترجاع ثم كلمة المرور الجديدة.'
-                      : 'Enter your email, recovery PIN, and new password.',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 18),
-
-                _simpleField(
-                  controller: emailCtrl,
-                  hint: _isArabic ? 'البريد الإلكتروني Gmail' : 'Gmail Email',
-                  icon: Icons.email_outlined,
-                  keyboard: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 12),
-
-                _simpleField(
-                  controller: pinCtrl,
-                  hint: _isArabic
-                      ? 'رمز الاسترجاع 4 أرقام'
-                      : 'Recovery PIN 4 digits',
-                  icon: Icons.pin_outlined,
-                  obscure: true,
-                  keyboard: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-
-                _simpleField(
-                  controller: newPassCtrl,
-                  hint: _isArabic
-                      ? 'كلمة المرور الجديدة'
-                      : 'New Password',
-                  icon: Icons.lock_outline,
-                  obscure: true,
-                  keyboard: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-
-                _simpleField(
-                  controller: confirmPassCtrl,
-                  hint: _isArabic
-                      ? 'تأكيد كلمة المرور الجديدة'
-                      : 'Confirm New Password',
-                  icon: Icons.lock_reset,
-                  obscure: true,
-                  keyboard: TextInputType.number,
-                ),
-                const SizedBox(height: 20),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0F4C81),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    onPressed: () async {
-                      final email = emailCtrl.text.trim();
-                      final pin = pinCtrl.text.trim();
-                      final newPass = newPassCtrl.text.trim();
-                      final confirmPass = confirmPassCtrl.text.trim();
-
-                      if (email.isEmpty ||
-                          pin.isEmpty ||
-                          newPass.isEmpty ||
-                          confirmPass.isEmpty) {
-                        _showSnack(
-                          _isArabic ? 'عبئ جميع الحقول' : 'Fill all fields',
-                          isError: true,
-                        );
-                        return;
-                      }
-
-                      if (!_isValidEmail(email)) {
-                        _showSnack(
-                          _isArabic
-                              ? 'البريد يجب أن يكون مثل example@gmail.com'
-                              : 'Email must be like example@gmail.com',
-                          isError: true,
-                        );
-                        return;
-                      }
-
-                      if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
-                        _showSnack(
-                          _isArabic
-                              ? 'رمز الاسترجاع يجب أن يكون 4 أرقام'
-                              : 'Recovery PIN must be 4 digits',
-                          isError: true,
-                        );
-                        return;
-                      }
-
-                      if (!_isValidPassword(newPass)) {
-                        _showSnack(
-                          _isArabic
-                              ? 'كلمة المرور يجب أن تكون 6 أرقام على الأقل'
-                              : 'Password must be at least 6 numbers',
-                          isError: true,
-                        );
-                        return;
-                      }
-
-                      if (newPass != confirmPass) {
-                        _showSnack(
-                          _isArabic
-                              ? 'كلمة المرور غير متطابقة'
-                              : 'Passwords do not match',
-                          isError: true,
-                        );
-                        return;
-                      }
-
-                      final prefs = await SharedPreferences.getInstance();
-
-                      final registeredEmail =
-                      prefs.getString('registeredEmail');
-                      final savedPin = prefs.getString('recoveryPin');
-
-                      if (registeredEmail == null || savedPin == null) {
-                        _showSnack(
-                          _isArabic
-                              ? 'لا يوجد حساب مسجل'
-                              : 'No registered account found',
-                          isError: true,
-                        );
-                        return;
-                      }
-
-                      if (email != registeredEmail) {
-                        _showSnack(
-                          _isArabic
-                              ? 'هذا البريد غير مسجل'
-                              : 'This email is not registered',
-                          isError: true,
-                        );
-                        return;
-                      }
-
-                      if (pin != savedPin) {
-                        _showSnack(
-                          _isArabic
-                              ? 'رمز الاسترجاع غير صحيح'
-                              : 'Wrong recovery PIN',
-                          isError: true,
-                        );
-                        return;
-                      }
-
-                      await prefs.setString('registeredPassword', newPass);
-
-                      if (!mounted) return;
-
-                      Navigator.pop(context);
-
-                      _showSnack(
-                        _isArabic
-                            ? 'تم تغيير كلمة المرور بنجاح'
-                            : 'Password changed successfully',
-                      );
-                    },
-                    child: Text(
-                      _isArabic ? 'تغيير كلمة المرور' : 'Change Password',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -466,10 +219,11 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFFE2E8F0)),
           borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFFF8FAFC),
         ),
         child: Row(
           children: [
-            Icon(icon, color: const Color(0xFF0F4C81), size: 30),
+            Icon(icon, color: primary, size: 30),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -482,6 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
+                      color: Color(0xFF0F172A),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -507,8 +262,7 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor:
-        isError ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+        backgroundColor: isError ? danger : success,
       ),
     );
   }
@@ -518,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Directionality(
       textDirection: _isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: const Color(0xFFEFF3F8),
+        backgroundColor: background,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -530,7 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.18),
+                      color: Colors.black.withOpacity(0.12),
                       blurRadius: 22,
                       offset: const Offset(0, 10),
                     ),
@@ -544,8 +298,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Color(0xFF0F4C81),
-                            Color(0xFF123A63),
+                            primary,
+                            Color(0xFF1E40AF),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -624,29 +378,41 @@ class _LoginScreenState extends State<LoginScreen> {
                             hint: _isArabic ? 'كلمة المرور' : 'Password',
                             icon: Icons.lock_outline,
                             obscure: true,
-                            keyboardType: TextInputType.number,
+                            keyboardType: TextInputType.text,
                           ),
 
                           const SizedBox(height: 8),
 
-                          Row(
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            runSpacing: 4,
                             children: [
-                              Checkbox(
-                                value: _rememberMe,
-                                onChanged: (v) {
-                                  setState(() => _rememberMe = v ?? false);
-                                },
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Checkbox(
+                                    value: _rememberMe,
+                                    activeColor: primary,
+                                    visualDensity: VisualDensity.compact,
+                                    onChanged: (v) {
+                                      setState(() => _rememberMe = v ?? false);
+                                    },
+                                  ),
+                                  Text(
+                                    _isArabic ? 'تذكرني' : 'Remember',
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ],
                               ),
-                              Text(_isArabic ? 'تذكرني' : 'Remember Me'),
-                              const Spacer(),
                               TextButton(
                                 onPressed: _forgotPassword,
                                 child: Text(
-                                  _isArabic
-                                      ? 'نسيت كلمة المرور؟'
-                                      : 'Forgot Password?',
+                                  _isArabic ? 'نسيت كلمة المرور؟' : 'Forgot Password?',
                                   style: const TextStyle(
                                     color: Color(0xFF334155),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -661,8 +427,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: ElevatedButton(
                               onPressed: _login,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0F4C81),
-                                elevation: 6,
+                                backgroundColor: primary,
+                                elevation: 4,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(18),
                                 ),
@@ -694,7 +460,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Text(
                               _isArabic ? 'إنشاء حساب' : 'CREATE ACCOUNT',
                               style: const TextStyle(
-                                color: Color(0xFF1E293B),
+                                color: primary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -704,30 +470,36 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           TextButton(
                             onPressed: _guestLogin,
-                            child: Text(
-                              _isArabic ? 'الدخول كضيف' : 'Continue as Guest',
-                              style: const TextStyle(
-                                color: Color(0xFF334155),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: _isArabic
+                                        ? 'مساعدة أولية؟ '
+                                        : 'FIRST HELP? ',
+                                    style: const TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+
+                                  TextSpan(
+                                    text: _isArabic
+                                        ? 'اضغط هنا'
+                                        : 'CLICK HERE',
+                                    style: const TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ],
-                      ),
-                    ),
-
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.vertical(
-                          bottom: Radius.circular(22),
-                        ),
-                      ),
-                      child: Text(
-                        _isArabic ? 'خيارات إضافية' : 'Secondary Options',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Color(0xFF475569)),
                       ),
                     ),
                   ],
@@ -758,30 +530,6 @@ class _LoginScreenState extends State<LoginScreen> {
         filled: true,
         fillColor: const Color(0xFFF1F5F9),
         contentPadding: const EdgeInsets.symmetric(vertical: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-      ),
-    );
-  }
-
-  Widget _simpleField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    bool obscure = false,
-    TextInputType keyboard = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscure,
-      keyboardType: keyboard,
-      textDirection: TextDirection.ltr,
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF64748B)),
-        filled: true,
-        fillColor: const Color(0xFFF1F5F9),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
         ),

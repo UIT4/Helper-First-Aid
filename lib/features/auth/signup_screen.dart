@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'questionnaire_screen.dart';
+import '../../core/database/app_database.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -14,7 +15,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  final _pinCtrl = TextEditingController();
+
 
   bool _isArabic = false;
 
@@ -24,7 +25,6 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmCtrl.dispose();
-    _pinCtrl.dispose();
     super.dispose();
   }
 
@@ -33,7 +33,10 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   bool _isValidPassword(String password) {
-    return RegExp(r'^\d{6,}$').hasMatch(password);
+    final regex = RegExp(
+      r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$',
+    );
+    return regex.hasMatch(password);
   }
 
   bool _isValidPin(String pin) {
@@ -45,15 +48,15 @@ class _SignupScreenState extends State<SignupScreen> {
     final email = _emailCtrl.text.trim();
     final password = _passwordCtrl.text.trim();
     final confirm = _confirmCtrl.text.trim();
-    final pin = _pinCtrl.text.trim();
 
     if (name.isEmpty ||
         email.isEmpty ||
         password.isEmpty ||
-        confirm.isEmpty ||
-        pin.isEmpty) {
-      _showSnack(_isArabic ? 'عبئ جميع الحقول' : 'Fill all fields',
-          isError: true);
+        confirm.isEmpty) {
+      _showSnack(
+        _isArabic ? 'عبئ جميع الحقول' : 'Fill all fields',
+        isError: true,
+      );
       return;
     }
 
@@ -70,8 +73,8 @@ class _SignupScreenState extends State<SignupScreen> {
     if (!_isValidPassword(password)) {
       _showSnack(
         _isArabic
-            ? 'كلمة المرور يجب أن تكون أرقام فقط وأقل شيء 6 أرقام'
-            : 'Password must be numbers only and at least 6 digits',
+            ? 'كلمة المرور يجب أن تكون 8 خانات على الأقل وتحتوي حرف ورقم ورمز'
+            : 'Password must be 8+ chars with letters, numbers, and special character',
         isError: true,
       );
       return;
@@ -85,22 +88,31 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    if (!_isValidPin(pin)) {
+    final existingUser =
+    await AppDatabase.instance.getUserByEmail(email);
+
+    if (existingUser != null) {
       _showSnack(
         _isArabic
-            ? 'رمز الاسترجاع يجب أن يكون 4 أرقام'
-            : 'Recovery PIN must be exactly 4 digits',
+            ? 'هذا البريد مسجل مسبقاً، سجّل دخول'
+            : 'This email is already registered. Log in instead.',
         isError: true,
       );
       return;
     }
 
+    await AppDatabase.instance.insertUser(
+      fullName: name,
+      email: email,
+      password: password,
+    );
+
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setString('registeredEmail', email);
-    await prefs.setString('registeredPassword', password);
+    await prefs.setBool('isGuest', false);
+    await prefs.setBool('isLoggedIn', false);
+    await prefs.setString('userEmail', email);
     await prefs.setString('registeredName', name);
-    await prefs.setString('recoveryPin', pin);
 
     if (!mounted) return;
 
@@ -175,27 +187,26 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: 18),
               _field(
-                hint: _isArabic ? 'كلمة المرور - أرقام فقط' : 'Password - numbers only',
-                controller: _passwordCtrl,
+                hint: _isArabic
+                    ? 'كلمة المرور (حرف + رقم + رمز)'
+                    : 'Password (letter + number + special)',                controller: _passwordCtrl,
                 icon: Icons.lock_outline,
                 obscure: true,
-                keyboard: TextInputType.number,
+                keyboard: TextInputType.text,
               ),
               const SizedBox(height: 18),
               _field(
-                hint: _isArabic ? 'تأكيد كلمة المرور' : 'Confirm Password',
+                hint: _isArabic
+                    ? 'تأكيد كلمة المرور'
+                    : 'Confirm Password',
+
                 controller: _confirmCtrl,
+
                 icon: Icons.lock_reset,
+
                 obscure: true,
-                keyboard: TextInputType.number,
-              ),
-              const SizedBox(height: 18),
-              _field(
-                hint: _isArabic ? 'رمز الاسترجاع - 4 أرقام' : 'Recovery PIN - 4 digits',
-                controller: _pinCtrl,
-                icon: Icons.pin_outlined,
-                obscure: true,
-                keyboard: TextInputType.number,
+
+                keyboard: TextInputType.text,
               ),
               const SizedBox(height: 32),
               SizedBox(

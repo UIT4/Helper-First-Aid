@@ -38,6 +38,7 @@ dependencies:
   sqflite: ^2.3.0
   image_picker: ^1.1.2
   geolocator: ^13.0.1
+  geocoding: ^4.0.0
   sqflite_common_ffi: ^2.3.0
   shared_preferences: ^2.2.3
   url_launcher: ^6.2.5

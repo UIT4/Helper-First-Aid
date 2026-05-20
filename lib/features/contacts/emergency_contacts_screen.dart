@@ -279,7 +279,6 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         barrierDismissible: false,
         builder: (ctx) => StatefulBuilder(
           builder: (ctx, setDialogState) => AlertDialog(
-            // نفس كودك الحالي
           ),
         ),
       );
@@ -329,13 +328,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         centerTitle: true,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.white),
-            onPressed: () => _showContactDialog(),
-            tooltip: 'Add Contact',
-          ),
-        ],
+        actions: const [],
       ),
       body: _isLoading
           ? const Center(
@@ -383,21 +376,6 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
           const Text(
             'Add contacts to notify in emergencies',
             style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-          const SizedBox(height: 28),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              padding:
-              const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-            ),
-            onPressed: () => _showContactDialog(),
-            icon: const Icon(Icons.add, color: Colors.white),
-            label: const Text('Add First Contact',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
