@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/database/app_database.dart';
-import '../settings/settings_screen.dart';
 
 class PatientProfileScreen extends StatefulWidget {
   const PatientProfileScreen({super.key});
@@ -10,21 +9,17 @@ class PatientProfileScreen extends StatefulWidget {
 }
 
 class _PatientProfileScreenState extends State<PatientProfileScreen> {
-  final _nameController        = TextEditingController();
-  final _ageController         = TextEditingController();
-  final _bloodController       = TextEditingController();
-  final _allergiesController   = TextEditingController();
-  final _conditionsController  = TextEditingController();
+  final _nameController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _bloodController = TextEditingController();
+  final _allergiesController = TextEditingController();
+  final _conditionsController = TextEditingController();
   final _medicationsController = TextEditingController();
-  final _notesController       = TextEditingController();
+  final _notesController = TextEditingController();
 
   String _selectedSex = 'M';
   bool _isLoading = true;
   bool _isSaving = false;
-
-  // =====================================================
-  // LIFECYCLE
-  // =====================================================
 
   @override
   void initState() {
@@ -44,28 +39,22 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     super.dispose();
   }
 
-  // =====================================================
-  // LOAD
-  // =====================================================
-
   Future<void> _loadProfile() async {
     final profile = await AppDatabase.instance.getProfile();
+
     if (profile != null) {
-      _nameController.text        = profile['full_name']?.toString()   ?? '';
-      _ageController.text         = profile['age']?.toString()          ?? '';
-      _bloodController.text       = profile['blood_type']?.toString()   ?? '';
-      _allergiesController.text   = profile['allergies']?.toString()    ?? '';
-      _conditionsController.text  = profile['conditions']?.toString()   ?? '';
-      _medicationsController.text = profile['medications']?.toString()  ?? '';
-      _notesController.text       = profile['notes']?.toString()        ?? '';
+      _nameController.text = profile['full_name']?.toString() ?? '';
+      _ageController.text = profile['age']?.toString() ?? '';
+      _bloodController.text = profile['blood_type']?.toString() ?? '';
+      _allergiesController.text = profile['allergies']?.toString() ?? '';
+      _conditionsController.text = profile['conditions']?.toString() ?? '';
+      _medicationsController.text = profile['medications']?.toString() ?? '';
+      _notesController.text = profile['notes']?.toString() ?? '';
       _selectedSex = profile['sex']?.toString() ?? 'M';
     }
+
     setState(() => _isLoading = false);
   }
-
-  // =====================================================
-  // SAVE
-  // =====================================================
 
   Future<void> _saveProfile() async {
     if (_nameController.text.trim().isEmpty) {
@@ -76,15 +65,17 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     setState(() => _isSaving = true);
 
     await AppDatabase.instance.saveProfile({
-      'full_name':   _nameController.text.trim(),
-      'age':         int.tryParse(_ageController.text) ?? 0,
-      'sex':         _selectedSex,
-      'blood_type':  _bloodController.text.trim(),
-      'allergies':   _allergiesController.text.trim(),
-      'conditions':  _conditionsController.text.trim(),
+      'full_name': _nameController.text.trim(),
+      'age': int.tryParse(_ageController.text.trim()) ?? 0,
+      'sex': _selectedSex,
+      'blood_type': _bloodController.text.trim(),
+      'allergies': _allergiesController.text.trim(),
+      'conditions': _conditionsController.text.trim(),
       'medications': _medicationsController.text.trim(),
-      'notes':       _notesController.text.trim(),
+      'notes': _notesController.text.trim(),
     });
+
+    if (!mounted) return;
 
     setState(() => _isSaving = false);
     _showSnackbar('Profile saved successfully ✓');
@@ -92,17 +83,17 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
   void _showSnackbar(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    ));
-  }
 
-  // =====================================================
-  // BUILD
-  // =====================================================
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor:
+            isError ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,70 +111,108 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       ),
       body: _isLoading
           ? const Center(
-          child: CircularProgressIndicator(color: Color(0xFF2563EB)))
+              child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+            )
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            _buildHeader(),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  _buildProfileHeader(),
+                  const SizedBox(height: 24),
 
-            const SizedBox(height: 24),
+                  _sectionTitle('Patient Information'),
+                  const SizedBox(height: 12),
+                  _buildInput('Full Name', _nameController, Icons.person),
+                  _buildInput(
+                    'Age',
+                    _ageController,
+                    Icons.cake,
+                    type: TextInputType.number,
+                  ),
+                  _buildSexSelector(),
+                  _buildInput(
+                    'Blood Type',
+                    _bloodController,
+                    Icons.bloodtype,
+                    hint: 'Example: A+, O-, AB+',
+                  ),
 
-            // ── Save Button ──
-            // ── Settings Button ──
-            Container(
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  )
+                  const SizedBox(height: 18),
+                  _sectionTitle('Medical Details'),
+                  const SizedBox(height: 12),
+                  _buildInput(
+                    'Allergies',
+                    _allergiesController,
+                    Icons.warning_amber_rounded,
+                    maxLines: 2,
+                    hint: 'Example: Penicillin, peanuts',
+                  ),
+                  _buildInput(
+                    'Conditions',
+                    _conditionsController,
+                    Icons.medical_information,
+                    maxLines: 2,
+                    hint: 'Example: Asthma, diabetes',
+                  ),
+                  _buildInput(
+                    'Medications',
+                    _medicationsController,
+                    Icons.medication,
+                    maxLines: 2,
+                    hint: 'Example: Insulin, inhaler',
+                  ),
+                  _buildInput(
+                    'Notes',
+                    _notesController,
+                    Icons.notes,
+                    maxLines: 3,
+                    hint: 'Any extra emergency notes',
+                  ),
+
+                  const SizedBox(height: 18),
+                  _buildEmergencyCard(),
+
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 58,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 2,
+                      ),
+                      onPressed: _isSaving ? null : _saveProfile,
+                      icon: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.save, color: Colors.white),
+                      label: Text(
+                        _isSaving ? 'Saving...' : 'SAVE PROFILE',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
-            SizedBox(
-              width: double.infinity,
-              height: 58,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  elevation: 2,
-                ),
-                onPressed: _isSaving ? null : _saveProfile,
-                icon: _isSaving
-                    ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2))
-                    : const Icon(Icons.save, color: Colors.white),
-                label: Text(
-                  _isSaving ? 'Saving...' : 'SAVE PROFILE',
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
     );
   }
 
-  // =====================================================
-  // WIDGETS
-  // =====================================================
-
-  Widget _buildAvatar() {
+  Widget _buildProfileHeader() {
     return Column(
       children: [
         Container(
@@ -200,9 +229,10 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         Text(
           _nameController.text.isEmpty ? 'Your Profile' : _nameController.text,
           style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A)),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
+          ),
         ),
       ],
     );
@@ -214,31 +244,33 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       child: Text(
         title,
         style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2563EB)),
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF2563EB),
+        ),
       ),
     );
   }
 
   Widget _buildInput(
-      String label,
-      TextEditingController controller,
-      IconData icon, {
-        TextInputType type = TextInputType.text,
-        int maxLines = 1,
-        String? hint,
-      }) {
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    TextInputType type = TextInputType.text,
+    int maxLines = 1,
+    String? hint,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 3))
+            color: Color(0x0D000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       child: TextField(
@@ -251,12 +283,13 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           hintStyle: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 14),
           prefixIcon: Icon(icon, color: const Color(0xFF2563EB)),
           border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
           filled: true,
           fillColor: Colors.white,
           contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );
@@ -269,19 +302,22 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 3))
+            color: Color(0x0D000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
         ],
       ),
       child: Row(
         children: [
           const Icon(Icons.person_outline, color: Color(0xFF2563EB)),
           const SizedBox(width: 12),
-          const Text('Sex',
-              style: TextStyle(color: Color(0xFF475569), fontSize: 16)),
+          const Text(
+            'Sex',
+            style: TextStyle(color: Color(0xFF475569), fontSize: 16),
+          ),
           const Spacer(),
           _sexChip('M', 'Male'),
           const SizedBox(width: 8),
@@ -294,7 +330,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   }
 
   Widget _sexChip(String value, String label) {
-    final bool selected = _selectedSex == value;
+    final selected = _selectedSex == value;
+
     return GestureDetector(
       onTap: () => setState(() => _selectedSex = value),
       child: Container(
@@ -306,22 +343,22 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         child: Text(
           label,
           style: TextStyle(
-              color: selected ? Colors.white : const Color(0xFF475569),
-              fontSize: 13,
-              fontWeight: FontWeight.w600),
+            color: selected ? Colors.white : const Color(0xFF475569),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
   }
 
-  // ── Emergency Card Preview ──
   Widget _buildEmergencyCard() {
-    final name       = _nameController.text.trim();
-    final age        = _ageController.text.trim();
-    final blood      = _bloodController.text.trim();
-    final allergies  = _allergiesController.text.trim();
+    final name = _nameController.text.trim();
+    final age = _ageController.text.trim();
+    final blood = _bloodController.text.trim();
+    final allergies = _allergiesController.text.trim();
     final conditions = _conditionsController.text.trim();
-    final meds       = _medicationsController.text.trim();
+    final meds = _medicationsController.text.trim();
 
     return Container(
       width: double.infinity,
@@ -334,19 +371,23 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            const Icon(Icons.emergency, color: Color(0xFFDC2626), size: 20),
-            const SizedBox(width: 8),
-            const Text('Emergency Card Preview',
+          const Row(
+            children: [
+              Icon(Icons.emergency, color: Color(0xFFDC2626), size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Emergency Card Preview',
                 style: TextStyle(
-                    color: Color(0xFFDC2626),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14)),
-          ]),
+                  color: Color(0xFFDC2626),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
           const Divider(color: Color(0xFFDC2626), height: 16),
           _cardRow('Name', name.isEmpty ? '—' : name),
-          _cardRow('Age / Sex',
-              '${age.isEmpty ? "—" : age} / $_selectedSex'),
+          _cardRow('Age / Sex', '${age.isEmpty ? "—" : age} / $_selectedSex'),
           _cardRow('Blood Type', blood.isEmpty ? '—' : blood),
           _cardRow('Allergies', allergies.isEmpty ? 'None' : allergies),
           _cardRow('Conditions', conditions.isEmpty ? 'None' : conditions),
@@ -364,16 +405,20 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         children: [
           SizedBox(
             width: 90,
-            child: Text('$label:',
-                style: const TextStyle(
-                    color: Color(0xFF475569),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600)),
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                color: Color(0xFF475569),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    color: Color(0xFF0F172A), fontSize: 13)),
+            child: Text(
+              value,
+              style: const TextStyle(color: Color(0xFF0F172A), fontSize: 13),
+            ),
           ),
         ],
       ),
