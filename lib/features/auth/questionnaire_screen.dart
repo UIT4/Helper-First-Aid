@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/language/app_language.dart';
 import '../home/home_screen.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
@@ -30,7 +31,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   final medicationOtherCtrl = TextEditingController();
   final countryCtrl = TextEditingController();
 
-  bool isArabic = false;
   bool isSaving = false;
   bool isLoadingLocation = false;
 
@@ -48,12 +48,17 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   String? selectedMedication;
   String? selectedMedicationDetail;
 
-  final genders = [
+  static const Color primary = Color(0xFF2563EB);
+  static const Color danger = Color(0xFFDC2626);
+  static const Color success = Color(0xFF16A34A);
+  static const Color background = Color(0xFFF8FAFC);
+
+  final genders = const [
     {'en': 'Male', 'ar': 'ذكر'},
     {'en': 'Female', 'ar': 'أنثى'},
   ];
 
-  final bloodTypes = [
+  final bloodTypes = const [
     {'en': 'A+', 'ar': 'A+'},
     {'en': 'A-', 'ar': 'A-'},
     {'en': 'B+', 'ar': 'B+'},
@@ -64,7 +69,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     {'en': 'O-', 'ar': 'O-'},
   ];
 
-  final allergies = [
+  final allergies = const [
     {'en': 'None', 'ar': 'لا يوجد'},
     {'en': 'Food Allergy', 'ar': 'حساسية طعام'},
     {'en': 'Medication Allergy', 'ar': 'حساسية أدوية'},
@@ -72,7 +77,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     {'en': 'Other', 'ar': 'أخرى'},
   ];
 
-  final foodAllergyDetails = [
+  final foodAllergyDetails = const [
     {'en': 'Fish', 'ar': 'سمك'},
     {'en': 'Milk', 'ar': 'حليب'},
     {'en': 'Eggs', 'ar': 'بيض'},
@@ -81,7 +86,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     {'en': 'Other', 'ar': 'أخرى'},
   ];
 
-  final allergyOtherDetails = [
+  final allergyOtherDetails = const [
     {'en': 'Dust', 'ar': 'غبار'},
     {'en': 'Pollen', 'ar': 'حبوب لقاح'},
     {'en': 'Animal Hair', 'ar': 'شعر الحيوانات'},
@@ -90,7 +95,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     {'en': 'Other', 'ar': 'أخرى'},
   ];
 
-  final conditions = [
+  final conditions = const [
     {'en': 'None', 'ar': 'لا يوجد'},
     {'en': 'Asthma', 'ar': 'ربو'},
     {'en': 'Diabetes', 'ar': 'سكري'},
@@ -99,7 +104,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     {'en': 'Other', 'ar': 'أخرى'},
   ];
 
-  final conditionDetails = [
+  final conditionDetails = const [
     {'en': 'Mild', 'ar': 'خفيف'},
     {'en': 'Moderate', 'ar': 'متوسط'},
     {'en': 'Severe', 'ar': 'شديد'},
@@ -108,14 +113,14 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     {'en': 'Other', 'ar': 'أخرى'},
   ];
 
-  final medications = [
+  final medications = const [
     {'en': 'None', 'ar': 'لا يوجد'},
     {'en': 'Daily Medication', 'ar': 'دواء يومي'},
     {'en': 'Emergency Medication', 'ar': 'دواء طوارئ'},
     {'en': 'Other', 'ar': 'أخرى'},
   ];
 
-  final medicationDetails = [
+  final medicationDetails = const [
     {'en': 'Inhaler', 'ar': 'بخاخ'},
     {'en': 'Insulin', 'ar': 'إنسولين'},
     {'en': 'Blood Pressure Pills', 'ar': 'حبوب ضغط'},
@@ -136,13 +141,16 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     nameCtrl.dispose();
     dobCtrl.dispose();
     notesCtrl.dispose();
-
     allergyOtherCtrl.dispose();
     conditionOtherCtrl.dispose();
     medicationOtherCtrl.dispose();
     countryCtrl.dispose();
-
     super.dispose();
+  }
+
+  Future<void> _toggleLanguage() async {
+    final isArabic = AppLanguage.isArabicContext(context);
+    await AppLanguage.setLanguage(isArabic ? 'en' : 'ar');
   }
 
   int _calculateAge(DateTime dob) {
@@ -165,13 +173,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       lastDate: DateTime.now(),
     );
 
-    if (picked != null) {
-      setState(() {
-        selectedDob = picked;
-        dobCtrl.text =
-        '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-      });
-    }
+    if (picked == null) return;
+
+    setState(() {
+      selectedDob = picked;
+      dobCtrl.text =
+      '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+    });
   }
 
   Future<void> _detectCountryFromLocation() async {
@@ -182,9 +190,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
       if (!serviceEnabled) {
         _showSnack(
-          isArabic
-              ? 'فعّل خدمة الموقع لتحديد الدولة'
-              : 'Enable location service to detect country',
+          AppLanguage.text(
+            context,
+            'Enable location service to detect country',
+            'فعّل خدمة الموقع لتحديد الدولة',
+          ),
           isError: true,
         );
         setState(() => isLoadingLocation = false);
@@ -200,9 +210,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         _showSnack(
-          isArabic
-              ? 'الموقع مطلوب لإكمال التسجيل'
-              : 'Location permission is required to continue',
+          AppLanguage.text(
+            context,
+            'Location permission is required to continue',
+            'الموقع مطلوب لإكمال التسجيل',
+          ),
           isError: true,
         );
         setState(() => isLoadingLocation = false);
@@ -218,24 +230,42 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         position.longitude,
       );
 
-      final country = placemarks.isNotEmpty
-          ? (placemarks.first.country ?? '')
-          : '';
+      final country =
+      placemarks.isNotEmpty ? (placemarks.first.country ?? '') : '';
 
       setState(() {
         countryCtrl.text = country.isEmpty ? 'Unknown' : country;
         isLoadingLocation = false;
       });
-    } catch (e) {
+    } catch (_) {
+      if (!mounted) return;
+
       setState(() => isLoadingLocation = false);
 
       _showSnack(
-        isArabic
-            ? 'تعذر تحديد الدولة من الموقع'
-            : 'Could not detect country from location',
+        AppLanguage.text(
+          context,
+          'Could not detect country from location',
+          'تعذر تحديد الدولة من الموقع',
+        ),
         isError: true,
       );
     }
+  }
+
+  String _buildGroupedValue(
+      String? main,
+      String? detail,
+      TextEditingController otherController,
+      ) {
+    if (main == null || main == 'None') return 'None';
+
+    if (detail == 'Other') {
+      final other = otherController.text.trim();
+      return other.isEmpty ? main : '$main: $other';
+    }
+
+    return detail == null || detail.isEmpty ? main : '$main: $detail';
   }
 
   Future<void> _finish() async {
@@ -249,19 +279,19 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         countryCtrl.text.trim().isEmpty ||
         countryCtrl.text.trim() == 'Unknown') {
       _showSnack(
-        isArabic
-            ? 'عبئ جميع الحقول المطلوبة وتأكد من تفعيل الموقع'
-            : 'Fill all required fields and enable location',
+        AppLanguage.text(
+          context,
+          'Fill all required fields and enable location',
+          'عبئ جميع الحقول المطلوبة وتأكد من تفعيل الموقع',
+        ),
         isError: true,
       );
       return;
     }
 
-    if (selectedAllergy != null &&
-        selectedAllergy != 'None' &&
-        selectedAllergyDetail == null) {
+    if (selectedAllergy != 'None' && selectedAllergyDetail == null) {
       _showSnack(
-        isArabic ? 'اختر تفاصيل الحساسية' : 'Choose allergy details',
+        AppLanguage.text(context, 'Choose allergy details', 'اختر تفاصيل الحساسية'),
         isError: true,
       );
       return;
@@ -270,17 +300,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     if (selectedAllergyDetail == 'Other' &&
         allergyOtherCtrl.text.trim().isEmpty) {
       _showSnack(
-        isArabic ? 'اكتب تفاصيل الحساسية' : 'Write allergy details',
+        AppLanguage.text(context, 'Write allergy details', 'اكتب تفاصيل الحساسية'),
         isError: true,
       );
       return;
     }
 
-    if (selectedCondition != null &&
-        selectedCondition != 'None' &&
-        selectedConditionDetail == null) {
+    if (selectedCondition != 'None' && selectedConditionDetail == null) {
       _showSnack(
-        isArabic ? 'اختر تفاصيل المرض' : 'Choose disease details',
+        AppLanguage.text(context, 'Choose disease details', 'اختر تفاصيل المرض'),
         isError: true,
       );
       return;
@@ -289,17 +317,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     if (selectedConditionDetail == 'Other' &&
         conditionOtherCtrl.text.trim().isEmpty) {
       _showSnack(
-        isArabic ? 'اكتب تفاصيل المرض' : 'Write disease details',
+        AppLanguage.text(context, 'Write disease details', 'اكتب تفاصيل المرض'),
         isError: true,
       );
       return;
     }
 
-    if (selectedMedication != null &&
-        selectedMedication != 'None' &&
-        selectedMedicationDetail == null) {
+    if (selectedMedication != 'None' && selectedMedicationDetail == null) {
       _showSnack(
-        isArabic ? 'اختر تفاصيل الدواء' : 'Choose medication details',
+        AppLanguage.text(context, 'Choose medication details', 'اختر تفاصيل الدواء'),
         isError: true,
       );
       return;
@@ -308,7 +334,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     if (selectedMedicationDetail == 'Other' &&
         medicationOtherCtrl.text.trim().isEmpty) {
       _showSnack(
-        isArabic ? 'اكتب اسم الدواء' : 'Write medication name',
+        AppLanguage.text(context, 'Write medication name', 'اكتب اسم الدواء'),
         isError: true,
       );
       return;
@@ -318,32 +344,26 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
     final age = _calculateAge(selectedDob!);
 
-    final allergyValue = selectedAllergy == 'None'
-        ? 'None'
-        : selectedAllergyDetail == 'Other'
-        ? '$selectedAllergy: ${allergyOtherCtrl.text.trim()}'
-        : '$selectedAllergy: $selectedAllergyDetail';
-
-    final conditionValue = selectedCondition == 'None'
-        ? 'None'
-        : selectedConditionDetail == 'Other'
-        ? '$selectedCondition: ${conditionOtherCtrl.text.trim()}'
-        : '$selectedCondition: $selectedConditionDetail';
-
-    final medicationValue = selectedMedication == 'None'
-        ? 'None'
-        : selectedMedicationDetail == 'Other'
-        ? '$selectedMedication: ${medicationOtherCtrl.text.trim()}'
-        : '$selectedMedication: $selectedMedicationDetail';
-
     await AppDatabase.instance.saveProfile({
       'full_name': nameCtrl.text.trim(),
       'age': age,
       'sex': selectedGender,
       'blood_type': selectedBloodType,
-      'allergies': allergyValue,
-      'conditions': conditionValue,
-      'medications': medicationValue,
+      'allergies': _buildGroupedValue(
+        selectedAllergy,
+        selectedAllergyDetail,
+        allergyOtherCtrl,
+      ),
+      'conditions': _buildGroupedValue(
+        selectedCondition,
+        selectedConditionDetail,
+        conditionOtherCtrl,
+      ),
+      'medications': _buildGroupedValue(
+        selectedMedication,
+        selectedMedicationDetail,
+        medicationOtherCtrl,
+      ),
       'notes': notesCtrl.text.trim(),
     });
 
@@ -361,9 +381,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => const HomeScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
   }
 
@@ -373,38 +391,42 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor:
-        isError ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+        backgroundColor: isError ? danger : success,
       ),
     );
   }
 
   List<Map<String, String>> _allergyDetailsList() {
-    if (selectedAllergy == 'Food Allergy') {
-      return foodAllergyDetails;
-    }
+    if (selectedAllergy == 'Food Allergy') return foodAllergyDetails;
     return allergyOtherDetails;
+  }
+
+  String _label(Map<String, String> item) {
+    final isArabic = AppLanguage.isArabicContext(context);
+    return isArabic ? item['ar']! : item['en']!;
   }
 
   @override
   Widget build(BuildContext context) {
+    final isArabic = AppLanguage.isArabicContext(context);
+
     return Directionality(
       textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: background,
         appBar: AppBar(
           title: Text(
-            isArabic ? 'المعلومات الطبية' : 'Medical Information',
+            AppLanguage.text(context, 'Medical Information', 'المعلومات الطبية'),
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
           ),
-          backgroundColor: const Color(0xFF2563EB),
+          backgroundColor: primary,
           centerTitle: true,
           actions: [
             TextButton(
-              onPressed: () => setState(() => isArabic = !isArabic),
+              onPressed: _toggleLanguage,
               child: Text(
                 isArabic ? 'English' : 'العربية',
                 style: const TextStyle(
@@ -420,31 +442,27 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           child: Column(
             children: [
               _textField(
-                label: isArabic ? 'الاسم الكامل' : 'Full Name',
+                label: AppLanguage.text(context, 'Full Name', 'الاسم الكامل'),
                 controller: nameCtrl,
                 icon: Icons.person,
               ),
-
               _dateField(),
-
               _dropdown(
-                label: isArabic ? 'الجنس' : 'Gender',
+                label: AppLanguage.text(context, 'Gender', 'الجنس'),
                 value: selectedGender,
                 items: genders,
                 icon: Icons.wc,
                 onChanged: (v) => setState(() => selectedGender = v),
               ),
-
               _dropdown(
-                label: isArabic ? 'فصيلة الدم' : 'Blood Type',
+                label: AppLanguage.text(context, 'Blood Type', 'فصيلة الدم'),
                 value: selectedBloodType,
                 items: bloodTypes,
                 icon: Icons.bloodtype,
                 onChanged: (v) => setState(() => selectedBloodType = v),
               ),
-
               _dropdown(
-                label: isArabic ? 'الحساسية' : 'Allergies',
+                label: AppLanguage.text(context, 'Allergies', 'الحساسية'),
                 value: selectedAllergy,
                 items: allergies,
                 icon: Icons.warning_amber,
@@ -456,10 +474,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                   });
                 },
               ),
-
               if (selectedAllergy != null && selectedAllergy != 'None')
                 _dropdown(
-                  label: isArabic ? 'تفاصيل الحساسية' : 'Allergy Details',
+                  label: AppLanguage.text(
+                    context,
+                    'Allergy Details',
+                    'تفاصيل الحساسية',
+                  ),
                   value: selectedAllergyDetail,
                   items: _allergyDetailsList(),
                   icon: Icons.restaurant,
@@ -470,18 +491,18 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                     });
                   },
                 ),
-
               if (selectedAllergyDetail == 'Other')
                 _textField(
-                  label: isArabic
-                      ? 'اكتب اسم الحساسية أو الطعام'
-                      : 'Write allergy or food name',
+                  label: AppLanguage.text(
+                    context,
+                    'Write allergy details',
+                    'اكتب تفاصيل الحساسية',
+                  ),
                   controller: allergyOtherCtrl,
                   icon: Icons.edit_note,
                 ),
-
               _dropdown(
-                label: isArabic ? 'الأمراض المزمنة' : 'Medical Conditions',
+                label: AppLanguage.text(context, 'Medical Conditions', 'الأمراض'),
                 value: selectedCondition,
                 items: conditions,
                 icon: Icons.medical_services,
@@ -493,10 +514,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                   });
                 },
               ),
-
               if (selectedCondition != null && selectedCondition != 'None')
                 _dropdown(
-                  label: isArabic ? 'تفاصيل المرض' : 'Disease Details',
+                  label: AppLanguage.text(
+                    context,
+                    'Condition Details',
+                    'تفاصيل المرض',
+                  ),
                   value: selectedConditionDetail,
                   items: conditionDetails,
                   icon: Icons.monitor_heart,
@@ -507,18 +531,18 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                     });
                   },
                 ),
-
               if (selectedConditionDetail == 'Other')
                 _textField(
-                  label: isArabic
-                      ? 'اكتب تفاصيل المرض'
-                      : 'Write disease details',
+                  label: AppLanguage.text(
+                    context,
+                    'Write disease details',
+                    'اكتب تفاصيل المرض',
+                  ),
                   controller: conditionOtherCtrl,
                   icon: Icons.edit_note,
                 ),
-
               _dropdown(
-                label: isArabic ? 'الأدوية' : 'Medications',
+                label: AppLanguage.text(context, 'Medications', 'الأدوية'),
                 value: selectedMedication,
                 items: medications,
                 icon: Icons.medication,
@@ -530,10 +554,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                   });
                 },
               ),
-
               if (selectedMedication != null && selectedMedication != 'None')
                 _dropdown(
-                  label: isArabic ? 'تفاصيل الدواء' : 'Medication Details',
+                  label: AppLanguage.text(
+                    context,
+                    'Medication Details',
+                    'تفاصيل الدواء',
+                  ),
                   value: selectedMedicationDetail,
                   items: medicationDetails,
                   icon: Icons.local_pharmacy,
@@ -544,44 +571,58 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                     });
                   },
                 ),
-
               if (selectedMedicationDetail == 'Other')
                 _textField(
-                  label:
-                  isArabic ? 'اكتب اسم الدواء' : 'Write medication name',
+                  label: AppLanguage.text(
+                    context,
+                    'Write medication name',
+                    'اكتب اسم الدواء',
+                  ),
                   controller: medicationOtherCtrl,
                   icon: Icons.edit_note,
                 ),
-
-              _locationField(),
-
               _textField(
-                label: isArabic ? 'ملاحظات' : 'Notes',
+                label: AppLanguage.text(context, 'Country', 'الدولة'),
+                controller: countryCtrl,
+                icon: Icons.public,
+                readOnly: true,
+                suffix: isLoadingLocation
+                    ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : IconButton(
+                  icon: const Icon(Icons.my_location),
+                  onPressed: _detectCountryFromLocation,
+                ),
+              ),
+              _textField(
+                label: AppLanguage.text(context, 'Notes', 'ملاحظات'),
                 controller: notesCtrl,
                 icon: Icons.note_alt,
                 maxLines: 3,
               ),
-
               const SizedBox(height: 24),
-
               SizedBox(
                 width: double.infinity,
-                height: 60,
+                height: 58,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: primary,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   onPressed: isSaving ? null : _finish,
-                  child: Text(
-                    isSaving
-                        ? (isArabic ? 'جاري الحفظ...' : 'Saving...')
-                        : (isArabic ? 'إنهاء' : 'Finish'),
+                  child: isSaving
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                    AppLanguage.text(context, 'FINISH', 'إنهاء'),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
                     ),
                   ),
                 ),
@@ -593,83 +634,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  Widget _textField({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
-    int maxLines = 1,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-        decoration: InputDecoration(
-          hintText: label,
-          prefixIcon: Icon(icon),
-          filled: true,
-          fillColor: const Color(0xFFF1F5F9),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _dateField() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextField(
-        controller: dobCtrl,
-        readOnly: true,
-        onTap: _pickDate,
-        textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-        decoration: InputDecoration(
-          hintText: isArabic ? 'تاريخ الميلاد' : 'Date of Birth',
-          prefixIcon: const Icon(Icons.calendar_month),
-          suffixIcon: const Icon(Icons.arrow_drop_down),
-          filled: true,
-          fillColor: const Color(0xFFF1F5F9),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _locationField() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextField(
-        controller: countryCtrl,
-        readOnly: true,
-        textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-        decoration: InputDecoration(
-          hintText: isArabic ? 'الدولة من الموقع' : 'Country from Location',
-          prefixIcon: isLoadingLocation
-              ? const Padding(
-            padding: EdgeInsets.all(12),
-            child: SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          )
-              : const Icon(Icons.location_on),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.my_location),
-            onPressed: _detectCountryFromLocation,
-          ),
-          filled: true,
-          fillColor: const Color(0xFFF1F5F9),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-      ),
+    return _textField(
+      label: AppLanguage.text(context, 'Date of Birth', 'تاريخ الميلاد'),
+      controller: dobCtrl,
+      icon: Icons.calendar_month,
+      readOnly: true,
+      onTap: _pickDate,
     );
   }
 
@@ -678,31 +649,58 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     required String? value,
     required List<Map<String, String>> items,
     required IconData icon,
-    required Function(String?) onChanged,
+    required ValueChanged<String?> onChanged,
   }) {
+    final safeValue = value != null && items.any((e) => e['en'] == value)
+        ? value
+        : null;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
-        initialValue: value,
+        value: safeValue,
         decoration: InputDecoration(
-          hintText: label,
-          prefixIcon: Icon(icon),
+          labelText: label,
+          prefixIcon: Icon(icon, color: primary),
           filled: true,
-          fillColor: const Color(0xFFF1F5F9),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
         ),
         items: items.map((item) {
-          final en = item['en']!;
-          final ar = item['ar']!;
-
-          return DropdownMenuItem(
-            value: en,
-            child: Text(isArabic ? ar : en),
+          return DropdownMenuItem<String>(
+            value: item['en'],
+            child: Text(_label(item)),
           );
         }).toList(),
         onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _textField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    bool readOnly = false,
+    VoidCallback? onTap,
+    Widget? suffix,
+    int maxLines = 1,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextField(
+        controller: controller,
+        readOnly: readOnly,
+        onTap: onTap,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: primary),
+          suffixIcon: suffix,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+        ),
       ),
     );
   }

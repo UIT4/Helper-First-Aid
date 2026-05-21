@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/database/app_database.dart';
+import '../../core/language/app_language.dart';
 import '../home/home_screen.dart';
-import '../chatbot/chatbot_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,12 +18,19 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordCtrl = TextEditingController();
 
   bool _rememberMe = false;
-  bool _isArabic = false;
 
   static const Color primary = Color(0xFF2563EB);
   static const Color background = Color(0xFFF8FAFC);
   static const Color danger = Color(0xFFDC2626);
   static const Color success = Color(0xFF16A34A);
+  static const Color textDark = Color(0xFF0F172A);
+  static const Color textMuted = Color(0xFF64748B);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberedLogin();
+  }
 
   @override
   void dispose() {
@@ -31,27 +39,43 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _loadRememberedLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final remember = prefs.getBool('rememberMe') ?? false;
+
+    if (!mounted) return;
+
+    setState(() {
+      _rememberMe = remember;
+
+      if (remember) {
+        _emailCtrl.text = prefs.getString('rememberedEmail') ?? '';
+        _passwordCtrl.text = prefs.getString('rememberedPassword') ?? '';
+      }
+    });
+  }
+
   bool _isValidEmail(String email) {
-    final regex = RegExp(r'^[A-Za-z0-9._%+-]+@gmail\.com$');
-    return regex.hasMatch(email);
+    return RegExp(r'^[A-Za-z0-9._%+-]+@gmail\.com$').hasMatch(email);
   }
 
   bool _isValidPassword(String password) {
-    final regex = RegExp(
+    return RegExp(
       r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$',
-    );
-    return regex.hasMatch(password);
+    ).hasMatch(password);
   }
 
   Future<void> _login() async {
-    final email = _emailCtrl.text.trim();
+    final email = _emailCtrl.text.trim().toLowerCase();
     final password = _passwordCtrl.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
       _showSnack(
-        _isArabic
-            ? 'أدخل البريد الإلكتروني وكلمة المرور'
-            : 'Enter email and password',
+        AppLanguage.text(
+          context,
+          'Enter email and password',
+          'أدخل البريد الإلكتروني وكلمة المرور',
+        ),
         isError: true,
       );
       return;
@@ -59,9 +83,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!_isValidEmail(email)) {
       _showSnack(
-        _isArabic
-            ? 'البريد يجب أن يكون مثل example@gmail.com'
-            : 'Email must be like example@gmail.com',
+        AppLanguage.text(
+          context,
+          'Email must be like example@gmail.com',
+          'البريد يجب أن يكون مثل example@gmail.com',
+        ),
         isError: true,
       );
       return;
@@ -69,9 +95,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!_isValidPassword(password)) {
       _showSnack(
-        _isArabic
-            ? 'كلمة المرور يجب أن تكون 8 خانات على الأقل وتحتوي حرف ورقم ورمز'
-            : 'Password must be 8+ chars with letters, numbers, and special character',
+        AppLanguage.text(
+          context,
+          'Password must be 8+ chars with letters, numbers, and special character',
+          'كلمة المرور يجب أن تكون 8 خانات على الأقل وتحتوي حرف ورقم ورمز',
+        ),
+        isError: true,
+      );
+      return;
+    }
+
+    final user = await AppDatabase.instance.loginUser(
+      email: email,
+      password: password,
+    );
+
+    if (user == null) {
+      _showSnack(
+        AppLanguage.text(
+          context,
+          'Wrong email or password',
+          'الإيميل أو كلمة المرور غير صحيحة',
+        ),
         isError: true,
       );
       return;
@@ -79,40 +124,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final prefs = await SharedPreferences.getInstance();
 
-    final registeredEmail = prefs.getString('registeredEmail');
-    final registeredPassword = prefs.getString('registeredPassword');
-
-    if (registeredEmail == null || registeredPassword == null) {
-      _showSnack(
-        _isArabic
-            ? 'أنت غير مسجل. أنشئ حساب أولاً.'
-            : 'You are not registered. Create an account first.',
-        isError: true,
-      );
-      return;
-    }
-
-    if (email != registeredEmail) {
-      _showSnack(
-        _isArabic
-            ? 'هذا البريد غير مسجل. أنشئ حساب.'
-            : 'This email is not registered. Create an account.',
-        isError: true,
-      );
-      return;
-    }
-
-    if (password != registeredPassword) {
-      _showSnack(
-        _isArabic ? 'كلمة المرور غير صحيحة' : 'Wrong password',
-        isError: true,
-      );
-      return;
-    }
-
     await prefs.setBool('isGuest', false);
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('userEmail', email);
+
+    if (_rememberMe) {
+      await prefs.setBool('rememberMe', true);
+      await prefs.setString('rememberedEmail', email);
+      await prefs.setString('rememberedPassword', password);
+    } else {
+      await prefs.setBool('rememberMe', false);
+      await prefs.remove('rememberedEmail');
+      await prefs.remove('rememberedPassword');
+    }
 
     if (!mounted) return;
 
@@ -136,7 +160,14 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Future<void> _toggleLanguage() async {
+    final isArabic = AppLanguage.isArabicContext(context);
+    await AppLanguage.setLanguage(isArabic ? 'en' : 'ar');
+  }
+
   void _forgotPassword() {
+    final isArabic = AppLanguage.isArabicContext(context);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -145,59 +176,65 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (_) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 22,
-            right: 22,
-            top: 22,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 22,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.lock_reset_rounded,
-                  size: 50,
-                  color: primary,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _isArabic ? 'إعادة تعيين كلمة المرور' : 'Reset Password',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+        return Directionality(
+          textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 22,
+              right: 22,
+              top: 22,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 22,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.lock_reset_rounded, size: 50, color: primary),
+                  const SizedBox(height: 12),
+                  Text(
+                    AppLanguage.text(context, 'Reset Password', 'إعادة تعيين كلمة المرور'),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: textDark,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _isArabic
-                      ? 'استرجاع كلمة المرور متاح عبر رقم الهاتف فقط.'
-                      : 'Password reset is available by phone number only.',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 20),
-
-                _resetOption(
-                  icon: Icons.sms_outlined,
-                  title: _isArabic
-                      ? 'استرجاع بواسطة رقم الهاتف'
-                      : 'Reset by Phone Number',
-                  subtitle: _isArabic
-                      ? 'سيتم إرسال رمز تحقق للهاتف لاحقاً'
-                      : 'Verification code will be sent by SMS later',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showSnack(
-                      _isArabic
-                          ? 'ربط خدمة SMS لاحقاً'
-                          : 'SMS service will be connected later',
-                    );
-                  },
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    AppLanguage.text(
+                      context,
+                      'Password reset is available by phone number only.',
+                      'استرجاع كلمة المرور متاح عبر رقم الهاتف فقط.',
+                    ),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: textMuted),
+                  ),
+                  const SizedBox(height: 20),
+                  _resetOption(
+                    icon: Icons.sms_outlined,
+                    title: AppLanguage.text(
+                      context,
+                      'Reset by Phone Number',
+                      'استرجاع بواسطة رقم الهاتف',
+                    ),
+                    subtitle: AppLanguage.text(
+                      context,
+                      'Verification code will be sent by SMS later',
+                      'سيتم إرسال رمز تحقق للهاتف لاحقاً',
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showSnack(
+                        AppLanguage.text(
+                          context,
+                          'SMS service will be connected later',
+                          'ربط خدمة SMS لاحقاً',
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -211,6 +248,8 @@ class _LoginScreenState extends State<LoginScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final isArabic = AppLanguage.isArabicContext(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -219,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFFE2E8F0)),
           borderRadius: BorderRadius.circular(16),
-          color: const Color(0xFFF8FAFC),
+          color: background,
         ),
         child: Row(
           children: [
@@ -228,25 +267,22 @@ class _LoginScreenState extends State<LoginScreen> {
             Expanded(
               child: Column(
                 crossAxisAlignment:
-                _isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    textAlign: _isArabic ? TextAlign.right : TextAlign.left,
+                    textAlign: isArabic ? TextAlign.right : TextAlign.left,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
-                      color: Color(0xFF0F172A),
+                      color: textDark,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    textAlign: _isArabic ? TextAlign.right : TextAlign.left,
-                    style: const TextStyle(
-                      color: Color(0xFF64748B),
-                      fontSize: 12,
-                    ),
+                    textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                    style: const TextStyle(color: textMuted, fontSize: 12),
                   ),
                 ],
               ),
@@ -259,6 +295,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showSnack(String msg, {bool isError = false}) {
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -269,8 +307,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isArabic = AppLanguage.isArabicContext(context);
+
     return Directionality(
-      textDirection: _isArabic ? TextDirection.rtl : TextDirection.ltr,
+      textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: background,
         body: SafeArea(
@@ -292,221 +332,215 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 child: Column(
                   children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 30),
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            primary,
-                            Color(0xFF1E40AF),
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(22),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Align(
-                            alignment: _isArabic
-                                ? Alignment.topLeft
-                                : Alignment.topRight,
-                            child: Padding(
-                              padding:
-                              const EdgeInsets.symmetric(horizontal: 16),
-                              child: TextButton(
-                                onPressed: () {
-                                  setState(() => _isArabic = !_isArabic);
-                                },
-                                child: Text(
-                                  _isArabic ? 'English' : 'العربية',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const Icon(
-                            Icons.health_and_safety_rounded,
-                            color: Colors.white,
-                            size: 78,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _isArabic ? 'مساعد الإسعاف' : 'Rescue Assistant',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _isArabic
-                                ? 'مساعدة فورية في الحالات الطارئة'
-                                : 'Instant emergency help',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-                      child: Column(
-                        children: [
-                          _inputField(
-                            controller: _emailCtrl,
-                            hint: _isArabic
-                                ? 'البريد الإلكتروني Gmail'
-                                : 'Gmail Email',
-                            icon: Icons.email_outlined,
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 14),
-
-                          _inputField(
-                            controller: _passwordCtrl,
-                            hint: _isArabic ? 'كلمة المرور' : 'Password',
-                            icon: Icons.lock_outline,
-                            obscure: true,
-                            keyboardType: TextInputType.text,
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          Wrap(
-                            alignment: WrapAlignment.spaceBetween,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            runSpacing: 4,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Checkbox(
-                                    value: _rememberMe,
-                                    activeColor: primary,
-                                    visualDensity: VisualDensity.compact,
-                                    onChanged: (v) {
-                                      setState(() => _rememberMe = v ?? false);
-                                    },
-                                  ),
-                                  Text(
-                                    _isArabic ? 'تذكرني' : 'Remember',
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                ],
-                              ),
-                              TextButton(
-                                onPressed: _forgotPassword,
-                                child: Text(
-                                  _isArabic ? 'نسيت كلمة المرور؟' : 'Forgot Password?',
-                                  style: const TextStyle(
-                                    color: Color(0xFF334155),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          SizedBox(
-                            width: double.infinity,
-                            height: 54,
-                            child: ElevatedButton(
-                              onPressed: _login,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primary,
-                                elevation: 4,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                              ),
-                              child: Text(
-                                _isArabic ? 'تسجيل الدخول' : 'Log in',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 18),
-
-                          const Divider(),
-
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SignupScreen(),
-                                ),
-                              );
-                            },
-                            child: Text(
-                              _isArabic ? 'إنشاء حساب' : 'CREATE ACCOUNT',
-                              style: const TextStyle(
-                                color: primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-
-                          const Divider(),
-
-                          TextButton(
-                            onPressed: _guestLogin,
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: _isArabic
-                                        ? 'مساعدة أولية؟ '
-                                        : 'FIRST HELP? ',
-                                    style: const TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-
-                                  TextSpan(
-                                    text: _isArabic
-                                        ? 'اضغط هنا'
-                                        : 'CLICK HERE',
-                                    style: const TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildHeader(),
+                    _buildForm(),
                   ],
                 ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    final isArabic = AppLanguage.isArabicContext(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 30),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primary, Color(0xFF1E40AF)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      child: Column(
+        children: [
+          Align(
+            alignment: isArabic ? Alignment.topLeft : Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextButton(
+                onPressed: _toggleLanguage,
+                child: Text(
+                  isArabic ? 'English' : 'العربية',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const Icon(
+            Icons.health_and_safety_rounded,
+            color: Colors.white,
+            size: 78,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            AppLanguage.text(context, 'Rescue Assistant', 'مساعد الإسعاف'),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            AppLanguage.text(
+              context,
+              'Instant emergency help',
+              'مساعدة فورية في الحالات الطارئة',
+            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 15),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildForm() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+      child: Column(
+        children: [
+          _inputField(
+            controller: _emailCtrl,
+            hint: AppLanguage.text(context, 'Gmail Email', 'البريد الإلكتروني Gmail'),
+            icon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 14),
+          _inputField(
+            controller: _passwordCtrl,
+            hint: AppLanguage.text(context, 'Password', 'كلمة المرور'),
+            icon: Icons.lock_outline,
+            obscure: true,
+          ),
+          const SizedBox(height: 8),
+          _buildRememberAndForgotRow(),
+          const SizedBox(height: 8),
+          _buildLoginButton(),
+          const SizedBox(height: 18),
+          const Divider(),
+          _buildCreateAccountButton(),
+          const Divider(),
+          _buildGuestButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRememberAndForgotRow() {
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      runSpacing: 4,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Checkbox(
+              value: _rememberMe,
+              activeColor: primary,
+              visualDensity: VisualDensity.compact,
+              onChanged: (v) {
+                setState(() {
+                  _rememberMe = v ?? false;
+                });
+              },
+            ),
+            Text(
+              AppLanguage.text(context, 'Remember', 'تذكرني'),
+              style: const TextStyle(fontSize: 13),
+            ),
+          ],
+        ),
+        TextButton(
+          onPressed: _forgotPassword,
+          child: Text(
+            AppLanguage.text(context, 'Forgot Password?', 'نسيت كلمة المرور؟'),
+            style: const TextStyle(
+              color: Color(0xFF334155),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton(
+        onPressed: _login,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primary,
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        ),
+        child: Text(
+          AppLanguage.text(context, 'Log in', 'تسجيل الدخول'),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreateAccountButton() {
+    return TextButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SignupScreen()),
+        );
+      },
+      child: Text(
+        AppLanguage.text(context, 'CREATE ACCOUNT', 'إنشاء حساب'),
+        style: const TextStyle(
+          color: primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuestButton() {
+    return TextButton(
+      onPressed: _guestLogin,
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: AppLanguage.text(context, 'FIRST HELP? ', 'مساعدة أولية؟ '),
+              style: const TextStyle(
+                color: danger,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextSpan(
+              text: AppLanguage.text(context, 'CLICK HERE', 'اضغط هنا'),
+              style: const TextStyle(
+                color: danger,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -526,7 +560,7 @@ class _LoginScreenState extends State<LoginScreen> {
       textDirection: TextDirection.ltr,
       decoration: InputDecoration(
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF64748B)),
+        prefixIcon: Icon(icon, color: textMuted),
         filled: true,
         fillColor: const Color(0xFFF1F5F9),
         contentPadding: const EdgeInsets.symmetric(vertical: 16),

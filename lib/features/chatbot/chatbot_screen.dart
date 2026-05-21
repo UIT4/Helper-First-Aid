@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import '../../core/network/sync_service.dart';
 import '../auth/login_screen.dart';
+import '../../core/language/app_language.dart';
 // =====================================================
 // OFFLINE CLASSIFIER  (expanded keyword set)
 // =====================================================
@@ -276,6 +277,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     super.initState();
 
     _loadGuestStatus();
+    _loadAppLanguage();
 
     _focusNode.addListener(() {
       setState(() {
@@ -287,12 +289,23 @@ class _ChatbotScreenState extends State<ChatbotScreen>
   Future<void> _loadGuestStatus() async {
     final prefs = await SharedPreferences.getInstance();
 
+    if (!mounted) return;
+
     setState(() {
       isGuest = prefs.getBool('isGuest') ?? false;
     });
   }
 
+  Future<void> _loadAppLanguage() async {
+    final lang = await AppLanguage.getLanguage();
 
+    if (!mounted) return;
+
+    setState(() {
+      _selectedLang = lang == 'ar' || lang == 'en' ? lang : 'auto';
+      _langIsAr = lang == 'ar';
+    });
+  }
 
   @override
   void dispose() {
@@ -340,8 +353,10 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Select Language',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              AppLanguage.text(context, 'Select Language', 'اختر اللغة'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             _langOption(
               'auto',
@@ -370,10 +385,16 @@ class _ChatbotScreenState extends State<ChatbotScreen>
       ),
     );
     if (selected != null) {
+      final langToSave = selected == 'auto' ? 'en' : selected;
+      await AppLanguage.setLanguage(langToSave);
+
       setState(() {
         _selectedLang = selected;
-        if (selected == 'ar')   _langIsAr = true;
-        if (selected == 'en')   _langIsAr = false;
+        if (selected == 'ar') _langIsAr = true;
+        if (selected == 'en') _langIsAr = false;
+        if (selected == 'auto') {
+          _langIsAr = AppLanguage.isArabicContext(context);
+        }
       });
     }
   }
@@ -443,7 +464,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
       });
       _scrollToBottom();
     } catch (_) {
-      _showSnackbar('Could not open camera', isError: true);
+      _showSnackbar(AppLanguage.text(context, 'Could not open camera', 'تعذر فتح الكاميرا'), isError: true);
     }
   }
 
@@ -573,7 +594,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     } else {
-      _showSnackbar('Cannot open dialer', isError: true);
+      _showSnackbar(AppLanguage.text(context, 'Cannot open dialer', 'تعذر فتح الاتصال'), isError: true);
     }
   }
 
@@ -645,13 +666,14 @@ class _ChatbotScreenState extends State<ChatbotScreen>
               children: [
                 const Icon(Icons.sms, color: Color(0xFF2563EB)),
                 const SizedBox(width: 10),
-                const Text('Send Emergency SMS',
-                    style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  AppLanguage.text(context, 'Send Emergency SMS', 'إرسال رسالة طوارئ'),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const SizedBox(height: 6),
-            Text('To: $phone',
+            Text(AppLanguage.text(context, 'To: $phone', 'إلى: $phone'),
                 style: const TextStyle(color: Color(0xFF475569), fontSize: 13)),
             const SizedBox(height: 12),
             Container(
@@ -671,10 +693,10 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: body));
                       Navigator.pop(context);
-                      _showSnackbar('Message copied ✓');
+                      _showSnackbar(AppLanguage.text(context, 'Message copied ✓', 'تم نسخ الرسالة ✓'));
                     },
                     icon: const Icon(Icons.copy, size: 18),
-                    label: const Text('Copy'),
+                    label: Text(AppLanguage.text(context, 'Copy', 'نسخ')),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -692,12 +714,14 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                       if (await canLaunchUrl(url)) {
                         await launchUrl(url);
                       } else {
-                        _showSnackbar('Cannot open SMS app', isError: true);
+                        _showSnackbar(AppLanguage.text(context, 'Cannot open SMS app', 'تعذر فتح تطبيق الرسائل'), isError: true);
                       }
                     },
                     icon: const Icon(Icons.send, size: 18, color: Colors.white),
-                    label: const Text('Send SMS',
-                        style: TextStyle(color: Colors.white)),
+                    label: Text(
+                      AppLanguage.text(context, 'Send SMS', 'إرسال'),
+                      style: const TextStyle(color: Colors.white),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2563EB),
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -769,42 +793,52 @@ class _ChatbotScreenState extends State<ChatbotScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
-      appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          // Messages list
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-              itemCount: _messages.length + (_isTyping ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (_isTyping && index == _messages.length) {
-                  return _buildTypingIndicator();
-                }
-                final msg    = _messages[index];
-                final isUser = msg['sender'] == 'user';
-                if (msg['type'] == 'unknown') return _buildUnknownCard(msg);
-                if (msg['type'] == 'image') {
-                  return _buildImageBubble(msg['imagePath'] ?? '', isUser);
-                }
+    final isArabic = AppLanguage.isArabicContext(context);
 
-                return _buildBubble(msg['text'] ?? '', isUser);
-              },
+    return Directionality(
+      textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF0F4F8),
+        appBar: _buildAppBar(),
+        body: Column(
+          children: [
+            // Messages list
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+                itemCount: _messages.length + (_isTyping ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (_isTyping && index == _messages.length) {
+                    return _buildTypingIndicator();
+                  }
+                  final msg    = _messages[index];
+                  final isUser = msg['sender'] == 'user';
+                  if (msg['type'] == 'unknown') return _buildUnknownCard(msg);
+                  if (msg['type'] == 'image')
+                    return _buildImageBubble(msg['imagePath'] ?? '', isUser);
+
+                  return _buildBubble(msg['text'] ?? '', isUser);
+                },
+              ),
             ),
-          ),
 
-          // Quick suggestion chips (only when input empty & not typing)
-          if (!_isTyping && _messages.length < 4)
-            _buildSuggestionChips(),
+            // Quick suggestion chips (only when input empty & not typing)
+            if (!_isTyping && _messages.length < 4)
+              _buildSuggestionChips(),
 
-          // Input area
-          _buildInputArea(),
-        ],
+            // Input area
+            _buildInputArea(),
+          ],
+        ),
       ),
     );
+  }
+
+  String _currentLanguageLabel() {
+    if (_selectedLang == 'ar') return '🇯🇴 العربية';
+    if (_selectedLang == 'en') return '🇬🇧 English';
+    return AppLanguage.text(context, '🌐 Auto', '🌐 تلقائي');
   }
 
   PreferredSizeWidget _buildAppBar() {
@@ -817,13 +851,16 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         children: [
           Text(
             isGuest
-                ? (_langIsAr
-                ? 'مساعد الإسعاف (ضيف)'
-                : 'Rescue Assistant (Guest)')
-                : (_langIsAr
-                ? 'مساعد الإسعاف'
-                : 'Rescue Assistant'),
-
+                ? AppLanguage.text(
+              context,
+              'Rescue Assistant (Guest)',
+              'مساعد الإسعاف (ضيف)',
+            )
+                : AppLanguage.text(
+              context,
+              'Rescue Assistant',
+              'مساعد الإسعاف',
+            ),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -831,45 +868,12 @@ class _ChatbotScreenState extends State<ChatbotScreen>
             ),
           ),
           Text(
-            _selectedLang == 'ar'
-                ? '🇯🇴 العربية'
-                : _selectedLang == 'en'
-                ? '🇬🇧 English'
-                : '🌐 Auto',
+            _currentLanguageLabel(),
             style: const TextStyle(color: Colors.white70, fontSize: 11),
           ),
         ],
       ),
       actions: [
-
-        if(isGuest)
-          IconButton(
-            icon: const Icon(
-              Icons.login,
-              color: Colors.white,
-            ),
-
-            onPressed: () async {
-
-              final prefs =
-              await SharedPreferences.getInstance();
-
-              await prefs.setBool(
-                'isGuest',
-                false,
-              );
-
-              if(!mounted) return;
-
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                  const LoginScreen(),
-                ),
-              );
-            },
-          ),
 
         IconButton(
           icon: const Icon(
@@ -901,7 +905,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(
-              _langIsAr ? 'اختر أو اكتب الحالة:' : 'Tap a situation or type:',
+              AppLanguage.text(context, 'Tap a situation or type:', 'اختر أو اكتب الحالة:'),
               style: const TextStyle(
                   fontSize: 12,
                   color: Color(0xFF64748B),
@@ -927,7 +931,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                       color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.3)),
+                          color: const Color(0xFF2563EB).withOpacity(0.3)),
                     ),
                     child: Text(label,
                         style: const TextStyle(
@@ -969,7 +973,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Colors.black.withOpacity(0.06),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -1004,7 +1008,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Colors.black.withOpacity(0.05),
                 blurRadius: 6,
                 offset: const Offset(0, 2)),
           ],
@@ -1029,7 +1033,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Colors.black.withOpacity(0.05),
                 blurRadius: 5,
                 offset: const Offset(0, 2)),
           ],
@@ -1058,10 +1062,10 @@ class _ChatbotScreenState extends State<ChatbotScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.4)),
+        border: Border.all(color: const Color(0xFFF97316).withOpacity(0.4)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 8,
               offset: const Offset(0, 3)),
         ],
@@ -1083,7 +1087,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  isAr ? 'لم أتعرف على الحالة' : 'Situation not identified',
+                  AppLanguage.text(context, 'Situation not identified', 'لم أتعرف على الحالة'),
                   style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
@@ -1112,7 +1116,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                   MaterialPageRoute(builder: (_) => const CategoriesScreen())),
               icon: const Icon(Icons.category, color: Colors.white, size: 18),
               label: Text(
-                isAr ? 'اختر التصنيف يدوياً' : 'Choose Category Manually',
+                AppLanguage.text(context, 'Choose Category Manually', 'اختر التصنيف يدوياً'),
                 style: const TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold),
               ),
@@ -1132,7 +1136,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.07),
+            color: Colors.black.withOpacity(0.07),
             blurRadius: 12,
             offset: const Offset(0, -3),
           ),
@@ -1170,9 +1174,11 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                 onSubmitted: (_) => _handleSend(),
                 textDirection: _langIsAr ? TextDirection.rtl : TextDirection.ltr,
                 decoration: InputDecoration(
-                  hintText: _langIsAr
-                      ? 'صف الحالة الطارئة...'
-                      : 'Describe the emergency...',
+                  hintText: AppLanguage.text(
+                    context,
+                    'Describe the emergency...',
+                    'صف الحالة الطارئة...',
+                  ),
                   hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
                   filled: true,
                   fillColor: const Color(0xFFF1F5F9),

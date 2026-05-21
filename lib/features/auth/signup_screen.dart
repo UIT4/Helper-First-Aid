@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'questionnaire_screen.dart';
+
 import '../../core/database/app_database.dart';
+import '../../core/language/app_language.dart';
+import 'questionnaire_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -16,8 +18,10 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
 
-
-  bool _isArabic = false;
+  static const Color primary = Color(0xFF2563EB);
+  static const Color danger = Color(0xFFDC2626);
+  static const Color success = Color(0xFF16A34A);
+  static const Color background = Color(0xFFF8FAFC);
 
   @override
   void dispose() {
@@ -33,28 +37,20 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   bool _isValidPassword(String password) {
-    final regex = RegExp(
+    return RegExp(
       r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$',
-    );
-    return regex.hasMatch(password);
-  }
-
-  bool _isValidPin(String pin) {
-    return RegExp(r'^\d{4}$').hasMatch(pin);
+    ).hasMatch(password);
   }
 
   Future<void> _next() async {
     final name = _nameCtrl.text.trim();
-    final email = _emailCtrl.text.trim();
+    final email = _emailCtrl.text.trim().toLowerCase();
     final password = _passwordCtrl.text.trim();
     final confirm = _confirmCtrl.text.trim();
 
-    if (name.isEmpty ||
-        email.isEmpty ||
-        password.isEmpty ||
-        confirm.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
       _showSnack(
-        _isArabic ? 'عبئ جميع الحقول' : 'Fill all fields',
+        AppLanguage.text(context, 'Fill all fields', 'عبئ جميع الحقول'),
         isError: true,
       );
       return;
@@ -62,9 +58,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (!_isValidGmail(email)) {
       _showSnack(
-        _isArabic
-            ? 'الإيميل يجب أن يكون بصيغة example@gmail.com'
-            : 'Email must be like example@gmail.com',
+        AppLanguage.text(
+          context,
+          'Email must be like example@gmail.com',
+          'الإيميل يجب أن يكون بصيغة example@gmail.com',
+        ),
         isError: true,
       );
       return;
@@ -72,9 +70,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (!_isValidPassword(password)) {
       _showSnack(
-        _isArabic
-            ? 'كلمة المرور يجب أن تكون 8 خانات على الأقل وتحتوي حرف ورقم ورمز'
-            : 'Password must be 8+ chars with letters, numbers, and special character',
+        AppLanguage.text(
+          context,
+          'Password must be 8+ chars with letters, numbers, and special character',
+          'كلمة المرور يجب أن تكون 8 خانات على الأقل وتحتوي حرف ورقم ورمز',
+        ),
         isError: true,
       );
       return;
@@ -82,20 +82,21 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (password != confirm) {
       _showSnack(
-        _isArabic ? 'كلمة المرور غير متطابقة' : 'Passwords do not match',
+        AppLanguage.text(context, 'Passwords do not match', 'كلمة المرور غير متطابقة'),
         isError: true,
       );
       return;
     }
 
-    final existingUser =
-    await AppDatabase.instance.getUserByEmail(email);
+    final existingUser = await AppDatabase.instance.getUserByEmail(email);
 
     if (existingUser != null) {
       _showSnack(
-        _isArabic
-            ? 'هذا البريد مسجل مسبقاً، سجّل دخول'
-            : 'This email is already registered. Log in instead.',
+        AppLanguage.text(
+          context,
+          'This email is already registered. Log in instead.',
+          'هذا البريد مسجل مسبقاً، سجّل دخول',
+        ),
         isError: true,
       );
       return;
@@ -127,40 +128,46 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
+  Future<void> _toggleLanguage() async {
+    final isArabic = AppLanguage.isArabicContext(context);
+    await AppLanguage.setLanguage(isArabic ? 'en' : 'ar');
+  }
+
   void _showSnack(String msg, {bool isError = false}) {
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor:
-        isError ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+        backgroundColor: isError ? danger : success,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isArabic = AppLanguage.isArabicContext(context);
+
     return Directionality(
-      textDirection: _isArabic ? TextDirection.rtl : TextDirection.ltr,
+      textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: background,
         appBar: AppBar(
           title: Text(
-            _isArabic ? 'إنشاء حساب' : 'Create Account',
+            AppLanguage.text(context, 'Create Account', 'إنشاء حساب'),
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
           ),
-          backgroundColor: const Color(0xFF2563EB),
+          backgroundColor: primary,
           iconTheme: const IconThemeData(color: Colors.white),
           centerTitle: true,
           actions: [
             TextButton(
-              onPressed: () {
-                setState(() => _isArabic = !_isArabic);
-              },
+              onPressed: _toggleLanguage,
               child: Text(
-                _isArabic ? 'English' : 'العربية',
+                isArabic ? 'English' : 'العربية',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -174,39 +181,34 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Column(
             children: [
               _field(
-                hint: _isArabic ? 'الاسم الكامل' : 'Full Name',
+                hint: AppLanguage.text(context, 'Full Name', 'الاسم الكامل'),
                 controller: _nameCtrl,
                 icon: Icons.person_outline,
               ),
               const SizedBox(height: 18),
               _field(
-                hint: _isArabic ? 'البريد الإلكتروني Gmail' : 'Gmail Email',
+                hint: AppLanguage.text(context, 'Gmail Email', 'البريد الإلكتروني Gmail'),
                 controller: _emailCtrl,
                 icon: Icons.email_outlined,
                 keyboard: TextInputType.emailAddress,
               ),
               const SizedBox(height: 18),
               _field(
-                hint: _isArabic
-                    ? 'كلمة المرور (حرف + رقم + رمز)'
-                    : 'Password (letter + number + special)',                controller: _passwordCtrl,
+                hint: AppLanguage.text(
+                  context,
+                  'Password (letter + number + special)',
+                  'كلمة المرور (حرف + رقم + رمز)',
+                ),
+                controller: _passwordCtrl,
                 icon: Icons.lock_outline,
                 obscure: true,
-                keyboard: TextInputType.text,
               ),
               const SizedBox(height: 18),
               _field(
-                hint: _isArabic
-                    ? 'تأكيد كلمة المرور'
-                    : 'Confirm Password',
-
+                hint: AppLanguage.text(context, 'Confirm Password', 'تأكيد كلمة المرور'),
                 controller: _confirmCtrl,
-
                 icon: Icons.lock_reset,
-
                 obscure: true,
-
-                keyboard: TextInputType.text,
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -214,14 +216,14 @@ class _SignupScreenState extends State<SignupScreen> {
                 height: 60,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
                   onPressed: _next,
                   child: Text(
-                    _isArabic ? 'التالي' : 'NEXT',
+                    AppLanguage.text(context, 'NEXT', 'التالي'),
                     style: const TextStyle(color: Colors.white, fontSize: 18),
                   ),
                 ),
@@ -247,7 +249,9 @@ class _SignupScreenState extends State<SignupScreen> {
       textDirection: TextDirection.ltr,
       decoration: InputDecoration(
         hintText: hint,
-        prefixIcon: Icon(icon),
+        prefixIcon: Icon(icon, color: primary),
+        filled: true,
+        fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
         ),
