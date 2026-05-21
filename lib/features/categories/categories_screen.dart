@@ -200,11 +200,28 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final urgencyClr  = _urgencyColor(code);
 
     return InkWell(
+
       onTap: () {
-        Navigator.pop(context, code);
+
+        Navigator.push(
+
+          context,
+
+          MaterialPageRoute(
+
+            builder: (_) => StepsViewerScreen(
+              categoryCode: code,
+              lang: _lang,
+            ),
+
+          ),
+
+        );
+
       },
 
       borderRadius: BorderRadius.circular(20),
+
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
