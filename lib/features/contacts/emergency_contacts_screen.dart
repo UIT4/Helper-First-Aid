@@ -190,7 +190,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                         style: TextStyle(fontSize: 14)),
                     subtitle: const Text('Will be first to receive SMS',
                         style: TextStyle(fontSize: 12, color: Color(0xFF475569))),
-                    activeColor: const Color(0xFF2563EB),
+                    activeThumbColor: const Color(0xFF2563EB),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ],
@@ -266,7 +266,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         ),
       ),
     );
-    Future<void> _showContactDialog({Map<String, dynamic>? existing}) async {
+    Future<void> showContactDialog({Map<String, dynamic>? existing}) async {
       final nameCtrl     = TextEditingController(text: existing?['name'] ?? '');
       final phoneCtrl    = TextEditingController(text: existing?['phone'] ?? '');
       final relationCtrl = TextEditingController(text: existing?['relation'] ?? '');
@@ -404,7 +404,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                 : null,
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 3))
             ],

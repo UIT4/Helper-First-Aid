@@ -168,7 +168,7 @@ class ResultScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -180,7 +180,7 @@ class ResultScreen extends StatelessWidget {
                       width: 90,
                       height: 90,
                       decoration: BoxDecoration(
-                        color: _urgencyColor(urgency).withOpacity(0.12),
+                        color: _urgencyColor(urgency).withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -224,7 +224,7 @@ class ResultScreen extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: _urgencyColor(urgency).withOpacity(0.12),
+                        color: _urgencyColor(urgency).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Text(

@@ -200,35 +200,18 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final urgencyClr  = _urgencyColor(code);
 
     return InkWell(
-
       onTap: () {
-
-        Navigator.push(
-
-          context,
-
-          MaterialPageRoute(
-
-            builder: (_) => StepsViewerScreen(
-              categoryCode: code,
-              lang: _lang,
-            ),
-
-          ),
-
-        );
-
+        Navigator.pop(context, code);
       },
 
       borderRadius: BorderRadius.circular(20),
-
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 10,
                 offset: const Offset(0, 4))
           ],
@@ -241,7 +224,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 36, color: color),
@@ -267,10 +250,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               padding: const EdgeInsets.symmetric(
                   horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: urgencyClr.withOpacity(0.1),
+                color: urgencyClr.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                    color: urgencyClr.withOpacity(0.3)),
+                    color: urgencyClr.withValues(alpha: 0.3)),
               ),
               child: Text(
                 urgency,

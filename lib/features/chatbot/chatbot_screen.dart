@@ -787,8 +787,9 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                 final msg    = _messages[index];
                 final isUser = msg['sender'] == 'user';
                 if (msg['type'] == 'unknown') return _buildUnknownCard(msg);
-                if (msg['type'] == 'image')
+                if (msg['type'] == 'image') {
                   return _buildImageBubble(msg['imagePath'] ?? '', isUser);
+                }
 
                 return _buildBubble(msg['text'] ?? '', isUser);
               },
@@ -926,7 +927,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                       color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: const Color(0xFF2563EB).withOpacity(0.3)),
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.3)),
                     ),
                     child: Text(label,
                         style: const TextStyle(
@@ -968,7 +969,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -1003,7 +1004,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 6,
                 offset: const Offset(0, 2)),
           ],
@@ -1028,7 +1029,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 5,
                 offset: const Offset(0, 2)),
           ],
@@ -1057,10 +1058,10 @@ class _ChatbotScreenState extends State<ChatbotScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF97316).withOpacity(0.4)),
+        border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 3)),
         ],
@@ -1131,7 +1132,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 12,
             offset: const Offset(0, -3),
           ),

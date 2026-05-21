@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/database/app_database.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../auth/login_screen.dart';
-import '../auth/signup_screen.dart';
+
 import '../chatbot/chatbot_screen.dart';
 import '../categories/categories_screen.dart';
 import '../profile/patient_profile_screen.dart';
@@ -57,121 +55,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
-  bool _isGuest = false;
-
-  Future<void> _loadGuestStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _isGuest = prefs.getBool('isGuest') ?? false;
-    });
-  }
-
-  void _openGuestBlockedDialog() {
-
-    showDialog(
-
-      context: context,
-
-      builder: (_) => AlertDialog(
-
-        shape: RoundedRectangleBorder(
-          borderRadius:
-          BorderRadius.circular(16),
-        ),
-
-        title: const Text(
-          'Guest Mode',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
-        content: const Text(
-          'You are using Guest Mode.\n'
-              'يمكنك التصفح لكن لا يمكنك تعديل البيانات.',
-        ),
-
-        actions: [
-
-          TextButton(
-
-            onPressed:(){
-
-              Navigator.push(
-                context,
-
-                MaterialPageRoute(
-                  builder:(_)=>const LoginScreen(),
-                ),
-              );
-
-            },
-
-            child: const Text(
-              'Log in',
-            ),
-
-          ),
-
-          ElevatedButton(
-
-            style:
-            ElevatedButton.styleFrom(
-              backgroundColor:
-              const Color(0xFF2563EB),
-            ),
-
-            onPressed:(){
-
-              Navigator.push(
-
-                context,
-
-                MaterialPageRoute(
-                  builder:(_)=>const SignupScreen(),
-                ),
-
-              );
-
-            },
-
-            child: const Text(
-              'Sign up',
-              style: TextStyle(
-                color: Colors.white,
-              ),
-            ),
-
-          )
-
-        ],
-
-      ),
-
-    );
-
-  }
-
-  void _openScreenProtected(
-
-      Widget screen,
-
-      {bool needsLogin=false}
-
-      ){
-
-    if(_isGuest && needsLogin){
-
-      _openGuestBlockedDialog();
-
-      return;
-
-    }
-
-    _openScreen(screen);
-
-  }
 
   // دالة مساعدة لإظهار رسائل التحذير (Snackbar) في شاشة الـ Home
   void _showSnackbar(String msg, {bool isError = false}) {
@@ -188,7 +71,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadGuestStatus();
     _loadSettings();
     _checkContentUpdates();
   }
@@ -316,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.16),
+              color: Colors.white.withValues(alpha: 0.16),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -355,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTapDown: (_) => setState(() => _isPressed = true),
             onTapUp: (_) => setState(() => _isPressed = false),
             onTapCancel: () => setState(() => _isPressed = false),
-            onTap: () => _openScreenProtected(const ChatbotScreen()),
+            onTap: () => _openScreen(const ChatbotScreen()),
             child: AnimatedScale(
               duration: const Duration(milliseconds: 120),
               scale: _isPressed ? 0.96 : 1.0,
@@ -367,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFDC2626).withOpacity(0.40),
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.40),
                       blurRadius: 22,
                       offset: const Offset(0, 10),
                     ),
@@ -427,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -438,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFDC2626).withOpacity(0.12),
+                color: const Color(0xFFDC2626).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -538,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return InkWell(
           borderRadius: BorderRadius.circular(22),
-          onTap: () => _openScreenProtected(item.screen),
+          onTap: () => _openScreen(item.screen),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -546,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.045),
+                  color: Colors.black.withValues(alpha: 0.045),
                   blurRadius: 12,
                   offset: const Offset(0, 5),
                 ),
@@ -559,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    color: item.color.withOpacity(0.12),
+                    color: item.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
@@ -717,77 +599,56 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
 
             _drawerItem(
+              icon: Icons.home_rounded,
+              title: 'Home',
+              onTap: () => Navigator.pop(context),
+            ),
+            _drawerItem(
               icon: Icons.chat_bubble_rounded,
               title: 'Describe Situation',
               onTap: () {
                 Navigator.pop(context);
-
-                _openScreenProtected(
-                  const ChatbotScreen(),
-                );
+                _openScreen(const ChatbotScreen());
               },
             ),
-
             _drawerItem(
               icon: Icons.category_rounded,
               title: 'Manual Categories',
               onTap: () {
                 Navigator.pop(context);
-
-                _openScreenProtected(
-                  const CategoriesScreen(),
-                );
+                _openScreen(const CategoriesScreen());
               },
             ),
-
             _drawerItem(
               icon: Icons.person_rounded,
               title: 'Patient Profile',
               onTap: () {
                 Navigator.pop(context);
-
-                _openScreenProtected(
-                  const PatientProfileScreen(),
-                  needsLogin: true,
-                );
+                _openScreen(const PatientProfileScreen());
               },
             ),
-
             _drawerItem(
               icon: Icons.contacts_rounded,
               title: 'Emergency Contacts',
               onTap: () {
                 Navigator.pop(context);
-
-                _openScreenProtected(
-                  const EmergencyContactsScreen(),
-                  needsLogin: true,
-                );
+                _openScreen(const EmergencyContactsScreen());
               },
             ),
-
             _drawerItem(
               icon: Icons.history_rounded,
               title: 'Incident History',
               onTap: () {
                 Navigator.pop(context);
-
-                _openScreenProtected(
-                  const IncidentHistoryScreen(),
-                );
+                _openScreen(const IncidentHistoryScreen());
               },
             ),
-
             _drawerItem(
               icon: Icons.settings_rounded,
               title: 'Settings',
               onTap: () {
                 Navigator.pop(context);
-
-                _openScreenProtected(
-                  const SettingsScreen(),
-                  needsLogin: true,
-                );
+              _openScreen(const SettingsScreen());
               },
             ),
 

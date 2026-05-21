@@ -263,9 +263,9 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.14),
+        color: Colors.white.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.18)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
       ),
       child: Column(
         children: [
@@ -326,7 +326,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                   boxShadow: [
                     if (selected)
                       BoxShadow(
-                        color: const Color(0xFF2563EB).withOpacity(0.20),
+                        color: const Color(0xFF2563EB).withValues(alpha: 0.20),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -387,7 +387,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.045),
+            color: Colors.black.withValues(alpha: 0.045),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -404,7 +404,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Icon(
@@ -535,7 +535,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(30),
         ),
         child: Row(

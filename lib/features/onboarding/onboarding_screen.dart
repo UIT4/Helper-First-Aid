@@ -138,7 +138,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: accent.withOpacity(0.12),
+                          color: accent.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -287,7 +287,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: accent.withOpacity(0.18),
+                    color: accent.withValues(alpha: 0.18),
                     blurRadius: 40,
                     offset: const Offset(0, 12),
                   ),

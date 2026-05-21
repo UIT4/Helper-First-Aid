@@ -499,7 +499,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: SwitchListTile(
         contentPadding: EdgeInsets.zero,
         value: _largeText,
-        activeColor: const Color(0xFF2563EB),
+        activeThumbColor: const Color(0xFF2563EB),
         onChanged: (value) => setState(() => _largeText = value),
         secondary: _iconBox(Icons.text_fields, const Color(0xFF2563EB)),
         title: Text(
@@ -555,7 +555,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF7ED),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF97316).withOpacity(0.35)),
+        border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.35)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -583,7 +583,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(icon, color: color, size: 24),
@@ -595,7 +595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
-        BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+        BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
       ],
     );
   }
