@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/database/app_database.dart';
 import 'package:flutter/services.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import '../auth/login_screen.dart';
+import '../auth/signup_screen.dart';
 import '../chatbot/chatbot_screen.dart';
 import '../categories/categories_screen.dart';
 import '../profile/patient_profile_screen.dart';
@@ -55,6 +57,121 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
+  bool _isGuest = false;
+
+  Future<void> _loadGuestStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _isGuest = prefs.getBool('isGuest') ?? false;
+    });
+  }
+
+  void _openGuestBlockedDialog() {
+
+    showDialog(
+
+      context: context,
+
+      builder: (_) => AlertDialog(
+
+        shape: RoundedRectangleBorder(
+          borderRadius:
+          BorderRadius.circular(16),
+        ),
+
+        title: const Text(
+          'Guest Mode',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        content: const Text(
+          'You are using Guest Mode.\n'
+              'يمكنك التصفح لكن لا يمكنك تعديل البيانات.',
+        ),
+
+        actions: [
+
+          TextButton(
+
+            onPressed:(){
+
+              Navigator.push(
+                context,
+
+                MaterialPageRoute(
+                  builder:(_)=>const LoginScreen(),
+                ),
+              );
+
+            },
+
+            child: const Text(
+              'Log in',
+            ),
+
+          ),
+
+          ElevatedButton(
+
+            style:
+            ElevatedButton.styleFrom(
+              backgroundColor:
+              const Color(0xFF2563EB),
+            ),
+
+            onPressed:(){
+
+              Navigator.push(
+
+                context,
+
+                MaterialPageRoute(
+                  builder:(_)=>const SignupScreen(),
+                ),
+
+              );
+
+            },
+
+            child: const Text(
+              'Sign up',
+              style: TextStyle(
+                color: Colors.white,
+              ),
+            ),
+
+          )
+
+        ],
+
+      ),
+
+    );
+
+  }
+
+  void _openScreenProtected(
+
+      Widget screen,
+
+      {bool needsLogin=false}
+
+      ){
+
+    if(_isGuest && needsLogin){
+
+      _openGuestBlockedDialog();
+
+      return;
+
+    }
+
+    _openScreen(screen);
+
+  }
 
   // دالة مساعدة لإظهار رسائل التحذير (Snackbar) في شاشة الـ Home
   void _showSnackbar(String msg, {bool isError = false}) {
@@ -71,6 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _loadGuestStatus();
     _loadSettings();
     _checkContentUpdates();
   }
@@ -237,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTapDown: (_) => setState(() => _isPressed = true),
             onTapUp: (_) => setState(() => _isPressed = false),
             onTapCancel: () => setState(() => _isPressed = false),
-            onTap: () => _openScreen(const ChatbotScreen()),
+            onTap: () => _openScreenProtected(const ChatbotScreen()),
             child: AnimatedScale(
               duration: const Duration(milliseconds: 120),
               scale: _isPressed ? 0.96 : 1.0,
@@ -420,7 +538,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return InkWell(
           borderRadius: BorderRadius.circular(22),
-          onTap: () => _openScreen(item.screen),
+          onTap: () => _openScreenProtected(item.screen),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -599,56 +717,77 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
 
             _drawerItem(
-              icon: Icons.home_rounded,
-              title: 'Home',
-              onTap: () => Navigator.pop(context),
-            ),
-            _drawerItem(
               icon: Icons.chat_bubble_rounded,
               title: 'Describe Situation',
               onTap: () {
                 Navigator.pop(context);
-                _openScreen(const ChatbotScreen());
+
+                _openScreenProtected(
+                  const ChatbotScreen(),
+                );
               },
             ),
+
             _drawerItem(
               icon: Icons.category_rounded,
               title: 'Manual Categories',
               onTap: () {
                 Navigator.pop(context);
-                _openScreen(const CategoriesScreen());
+
+                _openScreenProtected(
+                  const CategoriesScreen(),
+                );
               },
             ),
+
             _drawerItem(
               icon: Icons.person_rounded,
               title: 'Patient Profile',
               onTap: () {
                 Navigator.pop(context);
-                _openScreen(const PatientProfileScreen());
+
+                _openScreenProtected(
+                  const PatientProfileScreen(),
+                  needsLogin: true,
+                );
               },
             ),
+
             _drawerItem(
               icon: Icons.contacts_rounded,
               title: 'Emergency Contacts',
               onTap: () {
                 Navigator.pop(context);
-                _openScreen(const EmergencyContactsScreen());
+
+                _openScreenProtected(
+                  const EmergencyContactsScreen(),
+                  needsLogin: true,
+                );
               },
             ),
+
             _drawerItem(
               icon: Icons.history_rounded,
               title: 'Incident History',
               onTap: () {
                 Navigator.pop(context);
-                _openScreen(const IncidentHistoryScreen());
+
+                _openScreenProtected(
+                  const IncidentHistoryScreen(),
+                );
               },
             ),
+
             _drawerItem(
               icon: Icons.settings_rounded,
               title: 'Settings',
               onTap: () {
                 Navigator.pop(context);
-              _openScreen(const SettingsScreen());
+
+                _openScreenProtected(
+                  const SettingsScreen(),
+                  needsLogin: true,
+                );
               },
             ),
 
