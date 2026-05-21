@@ -683,7 +683,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         decoration: InputDecoration(
           hintText: label,
           prefixIcon: Icon(icon),
