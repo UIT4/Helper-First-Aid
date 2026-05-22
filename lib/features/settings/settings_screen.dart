@@ -23,6 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _showAdvanced = false;
+  bool _isGuest = false;
 
   static const Color primary = Color(0xFF2563EB);
   static const Color danger = Color(0xFFDC2626);
@@ -53,6 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final settings = await AppDatabase.instance.getSettings();
       final globalLang = await AppLanguage.getLanguage();
+      final prefs = await SharedPreferences.getInstance();
 
       if (!mounted) return;
 
@@ -65,6 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _fireCtrl.text = settings['fire_number'] ?? '199';
 
         _largeText = (settings['large_text'] ?? 0) == 1;
+        _isGuest = prefs.getBool('isGuest') ?? false;
         _isLoading = false;
       });
     } catch (_) {
@@ -128,6 +131,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _logout() async {
     final isAr = AppLanguage.isArabicContext(context);
+    final title = _isGuest
+        ? AppLanguage.text(context, 'Exit Guest Mode', 'الخروج من وضع الضيف')
+        : AppLanguage.text(context, 'Logout', 'تسجيل الخروج');
+
+    final message = _isGuest
+        ? AppLanguage.text(
+            context,
+            'Do you want to leave Guest Mode and go to the login screen?',
+            'هل تريد الخروج من وضع الضيف والانتقال إلى شاشة تسجيل الدخول؟',
+          )
+        : AppLanguage.text(
+            context,
+            'Are you sure you want to logout?',
+            'هل أنت متأكد أنك تريد تسجيل الخروج؟',
+          );
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -136,16 +154,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
-            AppLanguage.text(context, 'Logout', 'تسجيل الخروج'),
+            title,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          content: Text(
-            AppLanguage.text(
-              context,
-              'Are you sure you want to logout?',
-              'هل أنت متأكد أنك تريد تسجيل الخروج؟',
-            ),
-          ),
+          content: Text(message),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -155,7 +167,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: danger),
               onPressed: () => Navigator.pop(context, true),
               child: Text(
-                AppLanguage.text(context, 'Logout', 'تسجيل الخروج'),
+                title,
                 style: const TextStyle(color: Colors.white),
               ),
             ),
@@ -175,7 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
+      (route) => false,
     );
   }
 
@@ -204,8 +216,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: Text(
             AppLanguage.text(
               context,
-              'Profile & Settings',
-              'الملف الشخصي والإعدادات',
+              _isGuest ? 'Guest Settings' : 'Profile & Settings',
+              _isGuest ? 'إعدادات الضيف' : 'الملف الشخصي والإعدادات',
             ),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
@@ -386,7 +398,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onPressed: _logout,
         icon: const Icon(Icons.logout, color: danger),
         label: Text(
-          AppLanguage.text(context, 'Logout', 'تسجيل الخروج'),
+          AppLanguage.text(
+            context,
+            _isGuest ? 'Exit Guest Mode' : 'Logout',
+            _isGuest ? 'الخروج من وضع الضيف' : 'تسجيل الخروج',
+          ),
           style: const TextStyle(
             color: danger,
             fontWeight: FontWeight.bold,

@@ -667,7 +667,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context);
                 _openScreen(
                   const SettingsScreen(),
-                  requireLogin: true,
+                  requireLogin: false,
                 );
               },
             ),
