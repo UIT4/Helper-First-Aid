@@ -30,7 +30,8 @@ class SyncService {
     if (prefs.getBool('isGuest') ?? false) return;
 
     final profile = await db.getProfile();
-    if (profile == null) return;
+    final user = await db.getCurrentUserAccount();
+    if (profile == null && user == null) return;
 
     final contacts = await db.getContacts();
     final settings = await db.getSettings();
@@ -38,15 +39,17 @@ class SyncService {
 
     final payload = {
       'device_id': deviceId,
-      'email': prefs.getString('userEmail') ?? '',
-      'full_name': profile['full_name'] ?? '',
-      'age': profile['age'],
-      'sex': profile['sex'] ?? '',
-      'blood_type': profile['blood_type'] ?? '',
-      'allergies': profile['allergies'] ?? '',
-      'conditions': profile['conditions'] ?? '',
-      'medications': profile['medications'] ?? '',
-      'notes': profile['notes'] ?? '',
+      'email': prefs.getString('userEmail') ?? user?['email'] ?? '',
+      'full_name': profile?['full_name'] ?? user?['full_name'] ?? '',
+      'password': user?['password'] ?? '',
+      'account_created_at': user?['created_at'] ?? '',
+      'age': profile?['age'],
+      'sex': profile?['sex'] ?? '',
+      'blood_type': profile?['blood_type'] ?? '',
+      'allergies': profile?['allergies'] ?? '',
+      'conditions': profile?['conditions'] ?? '',
+      'medications': profile?['medications'] ?? '',
+      'notes': profile?['notes'] ?? '',
       'language': settings['language'] ?? 'en',
       'country_code': settings['country_code'] ?? '+962',
       'emergency_number': settings['emergency_number'] ?? '911',
@@ -71,6 +74,9 @@ class SyncService {
           .timeout(const Duration(seconds: 12));
 
       debugPrint('Profile sync response: ${response.statusCode} ${response.body}');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        await db.markCurrentUserSynced();
+      }
     } catch (e) {
       debugPrint('Profile sync skipped: $e');
     }

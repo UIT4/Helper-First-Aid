@@ -29,7 +29,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 8,
+      version: 9,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -61,7 +61,9 @@ class AppDatabase {
         full_name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        pending_sync INTEGER DEFAULT 1,
+        last_sync_at TEXT
       )
     ''');
 
@@ -259,7 +261,9 @@ class AppDatabase {
           full_name TEXT NOT NULL,
           email TEXT NOT NULL UNIQUE,
           password TEXT NOT NULL,
-          created_at TEXT NOT NULL
+          created_at TEXT NOT NULL,
+          pending_sync INTEGER DEFAULT 1,
+          last_sync_at TEXT
         )
       ''');
     }
@@ -305,6 +309,12 @@ class AppDatabase {
         Tables.guidanceSteps,
         'is_active INTEGER DEFAULT 1',
       );
+    }
+
+
+    if (oldVersion < 9) {
+      await _safeAddColumn(db, Tables.users, 'pending_sync INTEGER DEFAULT 1');
+      await _safeAddColumn(db, Tables.users, 'last_sync_at TEXT');
     }
   }
 
@@ -606,6 +616,7 @@ class AppDatabase {
       'user_email': email,
       'updated_at': DateTime.now().toIso8601String(),
     });
+    await markCurrentUserPendingSync();
   }
 
   Future<List<Map<String, dynamic>>> getContacts() async {
@@ -627,7 +638,9 @@ class AppDatabase {
     if (email == null) return -1;
 
     final db = await database;
-    return db.insert(Tables.contacts, {...contact, 'user_email': email});
+    final id = await db.insert(Tables.contacts, {...contact, 'user_email': email});
+    await markCurrentUserPendingSync();
+    return id;
   }
 
   Future<void> updateContact(int id, Map<String, dynamic> contact) async {
@@ -642,6 +655,7 @@ class AppDatabase {
       where: 'id = ? AND user_email = ?',
       whereArgs: [id, email],
     );
+    await markCurrentUserPendingSync();
   }
 
   Future<void> deleteContact(int id) async {
@@ -655,6 +669,7 @@ class AppDatabase {
       where: 'id = ? AND user_email = ?',
       whereArgs: [id, email],
     );
+    await markCurrentUserPendingSync();
   }
 
   Future<void> setPrimaryContact(int id) async {
@@ -677,6 +692,7 @@ class AppDatabase {
         whereArgs: [id, email],
       );
     });
+    await markCurrentUserPendingSync();
   }
 
   Future<List<Map<String, dynamic>>> getCategories() async {
@@ -762,6 +778,8 @@ class AppDatabase {
       'email': email.trim().toLowerCase(),
       'password': password,
       'created_at': DateTime.now().toIso8601String(),
+      'pending_sync': 1,
+      'last_sync_at': null,
     }, conflictAlgorithm: ConflictAlgorithm.abort);
   }
 
@@ -790,6 +808,42 @@ class AppDatabase {
     );
 
     return result.isEmpty ? null : result.first;
+  }
+
+
+  Future<Map<String, dynamic>?> getCurrentUserAccount() async {
+    final email = await _currentUserEmail();
+    if (email == null) return null;
+    return getUserByEmail(email);
+  }
+
+  Future<void> markCurrentUserPendingSync() async {
+    final email = await _currentUserEmail();
+    if (email == null) return;
+
+    final db = await database;
+    await db.update(
+      Tables.users,
+      {'pending_sync': 1},
+      where: 'email = ?',
+      whereArgs: [email],
+    );
+  }
+
+  Future<void> markCurrentUserSynced() async {
+    final email = await _currentUserEmail();
+    if (email == null) return;
+
+    final db = await database;
+    await db.update(
+      Tables.users,
+      {
+        'pending_sync': 0,
+        'last_sync_at': DateTime.now().toIso8601String(),
+      },
+      where: 'email = ?',
+      whereArgs: [email],
+    );
   }
 
   Future<void> close() async {

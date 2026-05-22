@@ -1,7 +1,10 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
-import '../onboarding/onboarding_screen.dart';
 
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../home/home_screen.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,25 +14,37 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _startTimeout();
+    _timer = Timer(const Duration(seconds: 1), _navigateToNext);
   }
 
-  void _startTimeout() {
-    Timer(const Duration(seconds: 1), _navigateToNext);
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   Future<void> _navigateToNext() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    final bool isGuest = prefs.getBool('isGuest') ?? false;
+    final String? userEmail = prefs.getString('userEmail');
+
     if (!mounted) return;
+
+    final bool hasActiveSession =
+        isGuest || (isLoggedIn && userEmail != null && userEmail.trim().isNotEmpty);
 
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => const OnboardingScreen(),
-
+        builder: (_) => hasActiveSession
+            ? const HomeScreen()
+            : const OnboardingScreen(),
       ),
     );
   }
@@ -49,7 +64,6 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -63,8 +77,6 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // App name
             const Text(
               'RESCUE ASSISTANT',
               style: TextStyle(
@@ -83,8 +95,6 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 60),
-
-            // Loading indicator
             const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               strokeWidth: 3,

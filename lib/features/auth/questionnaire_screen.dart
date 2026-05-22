@@ -129,10 +129,24 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     {'en': 'Other', 'ar': 'أخرى'},
   ];
 
+
+  final countries = const [
+    {'en': 'Jordan', 'ar': 'الأردن', 'code': '+962', 'emergency': '911', 'ambulance': '193', 'fire': '199'},
+    {'en': 'Saudi Arabia', 'ar': 'السعودية', 'code': '+966', 'emergency': '911', 'ambulance': '997', 'fire': '998'},
+    {'en': 'United Arab Emirates', 'ar': 'الإمارات', 'code': '+971', 'emergency': '999', 'ambulance': '998', 'fire': '997'},
+    {'en': 'Palestine', 'ar': 'فلسطين', 'code': '+970', 'emergency': '100', 'ambulance': '101', 'fire': '102'},
+    {'en': 'Egypt', 'ar': 'مصر', 'code': '+20', 'emergency': '122', 'ambulance': '123', 'fire': '180'},
+    {'en': 'Iraq', 'ar': 'العراق', 'code': '+964', 'emergency': '104', 'ambulance': '122', 'fire': '115'},
+    {'en': 'Syria', 'ar': 'سوريا', 'code': '+963', 'emergency': '112', 'ambulance': '110', 'fire': '113'},
+    {'en': 'Lebanon', 'ar': 'لبنان', 'code': '+961', 'emergency': '112', 'ambulance': '140', 'fire': '175'},
+    {'en': 'Other', 'ar': 'أخرى', 'code': '', 'emergency': '112', 'ambulance': '112', 'fire': '112'},
+  ];
+
   @override
   void initState() {
     super.initState();
     nameCtrl.text = widget.name;
+    countryCtrl.text = 'Jordan';
     _detectCountryFromLocation();
   }
 
@@ -183,41 +197,42 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   }
 
   Future<void> _detectCountryFromLocation() async {
+    if (!mounted) return;
     setState(() => isLoadingLocation = true);
 
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-
       if (!serviceEnabled) {
+        if (!mounted) return;
+        setState(() => isLoadingLocation = false);
         _showSnack(
           AppLanguage.text(
             context,
-            'Enable location service to detect country',
-            'فعّل خدمة الموقع لتحديد الدولة',
+            'Location is off. Choose your country manually.',
+            'الموقع مغلق. اختر الدولة يدوياً.',
           ),
           isError: true,
         );
-        setState(() => isLoadingLocation = false);
         return;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
-
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        setState(() => isLoadingLocation = false);
         _showSnack(
           AppLanguage.text(
             context,
-            'Location permission is required to continue',
-            'الموقع مطلوب لإكمال التسجيل',
+            'Location denied. Choose your country manually.',
+            'تم رفض الموقع. اختر الدولة يدوياً.',
           ),
           isError: true,
         );
-        setState(() => isLoadingLocation = false);
         return;
       }
 
@@ -230,27 +245,60 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         position.longitude,
       );
 
-      final country =
-      placemarks.isNotEmpty ? (placemarks.first.country ?? '') : '';
+      final detectedCountry =
+          placemarks.isNotEmpty ? (placemarks.first.country ?? '') : '';
+      final matchedCountry = _countryValueFromDetectedName(detectedCountry);
 
+      if (!mounted) return;
       setState(() {
-        countryCtrl.text = country.isEmpty ? 'Unknown' : country;
+        countryCtrl.text = matchedCountry;
         isLoadingLocation = false;
       });
     } catch (_) {
       if (!mounted) return;
-
       setState(() => isLoadingLocation = false);
-
       _showSnack(
         AppLanguage.text(
           context,
-          'Could not detect country from location',
-          'تعذر تحديد الدولة من الموقع',
+          'Could not detect country. Choose it manually.',
+          'تعذر تحديد الدولة. اخترها يدوياً.',
         ),
         isError: true,
       );
     }
+  }
+
+  String _countryValueFromDetectedName(String country) {
+    final normalized = country.trim().toLowerCase();
+    if (normalized.isEmpty) return countryCtrl.text.isEmpty ? 'Jordan' : countryCtrl.text;
+
+    for (final item in countries) {
+      final en = item['en']!.toLowerCase();
+      final ar = item['ar']!;
+      if (normalized == en || country == ar || normalized.contains(en)) {
+        return item['en']!;
+      }
+    }
+
+    if (normalized.contains('jordan')) return 'Jordan';
+    if (normalized.contains('saudi')) return 'Saudi Arabia';
+    if (normalized.contains('emirates') || normalized.contains('uae')) {
+      return 'United Arab Emirates';
+    }
+    if (normalized.contains('palestine')) return 'Palestine';
+    if (normalized.contains('egypt')) return 'Egypt';
+    if (normalized.contains('iraq')) return 'Iraq';
+    if (normalized.contains('syria')) return 'Syria';
+    if (normalized.contains('lebanon')) return 'Lebanon';
+
+    return 'Other';
+  }
+
+  Map<String, String> _selectedCountryInfo() {
+    return countries.firstWhere(
+      (item) => item['en'] == countryCtrl.text.trim(),
+      orElse: () => countries.first,
+    );
   }
 
   String _buildGroupedValue(
@@ -276,13 +324,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         selectedAllergy == null ||
         selectedCondition == null ||
         selectedMedication == null ||
-        countryCtrl.text.trim().isEmpty ||
-        countryCtrl.text.trim() == 'Unknown') {
+        countryCtrl.text.trim().isEmpty) {
       _showSnack(
         AppLanguage.text(
           context,
-          'Fill all required fields and enable location',
-          'عبئ جميع الحقول المطلوبة وتأكد من تفعيل الموقع',
+          'Fill all required fields and choose your country',
+          'عبئ جميع الحقول المطلوبة واختر الدولة',
         ),
         isError: true,
       );
@@ -365,6 +412,17 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         medicationOtherCtrl,
       ),
       'notes': notesCtrl.text.trim(),
+    });
+
+    final countryInfo = _selectedCountryInfo();
+    final currentSettings = await AppDatabase.instance.getSettings();
+    await AppDatabase.instance.saveSettings({
+      ...currentSettings,
+      'country': countryInfo['en'] ?? countryCtrl.text.trim(),
+      'country_code': countryInfo['code'] ?? '+962',
+      'emergency_number': countryInfo['emergency'] ?? '911',
+      'ambulance_number': countryInfo['ambulance'] ?? '193',
+      'fire_number': countryInfo['fire'] ?? '199',
     });
 
     final prefs = await SharedPreferences.getInstance();
@@ -581,22 +639,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                   controller: medicationOtherCtrl,
                   icon: Icons.edit_note,
                 ),
-              _textField(
-                label: AppLanguage.text(context, 'Country', 'الدولة'),
-                controller: countryCtrl,
-                icon: Icons.public,
-                readOnly: true,
-                suffix: isLoadingLocation
-                    ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : IconButton(
-                  icon: const Icon(Icons.my_location),
-                  onPressed: _detectCountryFromLocation,
-                ),
-              ),
+              _countryDropdown(),
               _textField(
                 label: AppLanguage.text(context, 'Notes', 'ملاحظات'),
                 controller: notesCtrl,
@@ -673,6 +716,52 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           );
         }).toList(),
         onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _countryDropdown() {
+    final safeValue = countries.any((e) => e['en'] == countryCtrl.text)
+        ? countryCtrl.text
+        : 'Jordan';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: safeValue,
+        decoration: InputDecoration(
+          labelText: AppLanguage.text(context, 'Country', 'الدولة'),
+          prefixIcon: const Icon(Icons.public, color: primary),
+          suffixIcon: isLoadingLocation
+              ? const Padding(
+                  padding: EdgeInsets.all(14),
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.my_location),
+                  onPressed: _detectCountryFromLocation,
+                ),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        items: countries.map((item) {
+          final label = AppLanguage.isArabicContext(context)
+              ? item['ar']!
+              : item['en']!;
+          return DropdownMenuItem<String>(
+            value: item['en'],
+            child: Text(label),
+          );
+        }).toList(),
+        onChanged: (value) {
+          if (value == null) return;
+          setState(() => countryCtrl.text = value);
+        },
       ),
     );
   }
