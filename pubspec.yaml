@@ -2,7 +2,7 @@ name: rescueiq
 
 description: "RescueIQ - Smart Emergency First Aid Assistant"
 
-publish_to: 'none'
+publish_to: "none"
 
 version: 1.0.0+1
 
@@ -27,21 +27,15 @@ dependencies:
   path: ^1.9.0
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
+  flutter_launcher_icons: ^0.14.1
 
-  flutter_lints: ^5.0.0
-
-  flutter_launcher_icons: ^0.14.3
-
-flutter_launcher_icons:
+flutter_icons:
   android: true
   ios: true
-
-  image_path: "assets/icon/rescueiq_icon.png"
+  image_path: "assets/icons/app_icon.png"
 
   adaptive_icon_background: "#2563EB"
-  adaptive_icon_foreground: "assets/icon/rescueiq_icon.png"
+  adaptive_icon_foreground: "assets/icons/rescueiq_icon.png"
 
 flutter:
   uses-material-design: true
