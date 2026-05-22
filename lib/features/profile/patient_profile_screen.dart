@@ -750,7 +750,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           Row(
+          Row(
             children: [
               Icon(Icons.assignment_rounded, color: primary),
               SizedBox(width: 10),
@@ -971,7 +971,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: 12,
           offset: const Offset(0, 5),
         ),

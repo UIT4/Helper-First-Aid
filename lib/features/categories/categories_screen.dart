@@ -321,7 +321,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -334,7 +334,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -363,10 +363,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 vertical: 4,
               ),
               decoration: BoxDecoration(
-                color: urgencyColor.withOpacity(0.1),
+                color: urgencyColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: urgencyColor.withOpacity(0.3),
+                  color: urgencyColor.withValues(alpha: 0.3),
                 ),
               ),
               child: Text(

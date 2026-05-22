@@ -542,7 +542,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: SwitchListTile(
         contentPadding: EdgeInsets.zero,
         value: _largeText,
-        activeColor: primary,
+        activeThumbColor: primary,
         onChanged: (value) => setState(() => _largeText = value),
         secondary: _iconBox(Icons.text_fields, primary),
         title: Text(
@@ -606,7 +606,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF7ED),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: warning.withOpacity(0.35)),
+        border: Border.all(color: warning.withValues(alpha: 0.35)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,7 +636,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(icon, color: color, size: 24),
@@ -649,7 +649,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.04),
+          color: Colors.black.withValues(alpha: 0.04),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),

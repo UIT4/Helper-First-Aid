@@ -7,12 +7,10 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import '../result/result_screen.dart';
 import '../../core/database/app_database.dart';
-import '../steps/steps_viewer_screen.dart';
 import '../categories/categories_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import '../../core/network/sync_service.dart';
-import '../auth/login_screen.dart';
 import '../../core/language/app_language.dart';
 // =====================================================
 // OFFLINE CLASSIFIER  (expanded keyword set)
@@ -254,7 +252,6 @@ class _ChatbotScreenState extends State<ChatbotScreen>
   bool _langIsAr = false;
   bool _isLoading = false;
   String _selectedLang  = 'auto';
-  bool _inputFocused    = false;
   bool isGuest = false;
   final FocusNode _focusNode = FocusNode();
 
@@ -279,11 +276,6 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     _loadGuestStatus();
     _loadAppLanguage();
 
-    _focusNode.addListener(() {
-      setState(() {
-        _inputFocused = _focusNode.hasFocus;
-      });
-    });
   }
 
   Future<void> _loadGuestStatus() async {
@@ -342,11 +334,12 @@ class _ChatbotScreenState extends State<ChatbotScreen>
   }
 
   // ── Language menu ──
-  void _showLanguageMenu() async {
+  Future<void> _showLanguageMenu() async {
     final selected = await showModalBottomSheet<String>(
       context: context,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         child: Column(
@@ -362,18 +355,14 @@ class _ChatbotScreenState extends State<ChatbotScreen>
               'auto',
               '',
               _langIsAr ? 'تلقائي' : 'Auto Detect',
-              _langIsAr
-                  ? 'كشف اللغة تلقائياً'
-                  : 'Detect language automatically',
+              _langIsAr ? 'كشف اللغة تلقائياً' : 'Detect language automatically',
             ),
-
             _langOption(
               'en',
               '',
               _langIsAr ? 'الإنجليزية' : 'English',
               _langIsAr ? 'لغة إنجليزية' : 'English Language',
             ),
-
             _langOption(
               'ar',
               '',
@@ -384,19 +373,22 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         ),
       ),
     );
-    if (selected != null) {
-      final langToSave = selected == 'auto' ? 'en' : selected;
-      await AppLanguage.setLanguage(langToSave);
 
-      setState(() {
-        _selectedLang = selected;
-        if (selected == 'ar') _langIsAr = true;
-        if (selected == 'en') _langIsAr = false;
-        if (selected == 'auto') {
-          _langIsAr = AppLanguage.isArabicContext(context);
-        }
-      });
-    }
+    if (!mounted || selected == null) return;
+
+    final langToSave = selected == 'auto' ? 'en' : selected;
+    await AppLanguage.setLanguage(langToSave);
+
+    if (!mounted) return;
+
+    setState(() {
+      _selectedLang = selected;
+      if (selected == 'ar') _langIsAr = true;
+      if (selected == 'en') _langIsAr = false;
+      if (selected == 'auto') {
+        _langIsAr = AppLanguage.isArabicContext(context);
+      }
+    });
   }
 
   Widget _langOption(String val, String flag, String label, String sub) {
@@ -430,11 +422,15 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         return await Geolocator.getLastKnownPosition();
       }
       return await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high)
-          .timeout(const Duration(seconds: 8),
-          onTimeout: () async =>
-          (await Geolocator.getLastKnownPosition()) ??
-              Future.error('timeout'));
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      ).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () async =>
+        (await Geolocator.getLastKnownPosition()) ??
+            Future.error('timeout'),
+      );
     } catch (_) {
       return null;
     }
@@ -445,13 +441,16 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     try {
       final XFile? photo =
       await _picker.pickImage(source: ImageSource.camera, imageQuality: 80);
-      if (photo == null) return;
+      if (photo == null || !mounted) return;
       setState(() {
         _messages.add({'sender': 'user', 'type': 'image', 'imagePath': photo.path});
         _isTyping = true;
       });
       _scrollToBottom();
       await Future.delayed(const Duration(milliseconds: 900));
+
+      if (!mounted) return;
+
       setState(() {
         _isTyping = false;
         _messages.add({
@@ -464,7 +463,11 @@ class _ChatbotScreenState extends State<ChatbotScreen>
       });
       _scrollToBottom();
     } catch (_) {
-      _showSnackbar(AppLanguage.text(context, 'Could not open camera', 'تعذر فتح الكاميرا'), isError: true);
+      if (!mounted) return;
+      _showSnackbar(
+        AppLanguage.text(context, 'Could not open camera', 'تعذر فتح الكاميرا'),
+        isError: true,
+      );
     }
   }
 
@@ -569,8 +572,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         );
       }
     } catch (e) {
-      print("ERROR:");
-      print(e);
+      if (!mounted) return;
 
       _showSnackbar(
         e.toString(),
@@ -593,190 +595,18 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     final url = Uri(scheme: 'tel', path: number);
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
-    } else {
-      _showSnackbar(AppLanguage.text(context, 'Cannot open dialer', 'تعذر فتح الاتصال'), isError: true);
-    }
-  }
-
-  // ── SMS ──
-  Future<void> _sendSms(String category, String urgency) async {
-    final profile   = await AppDatabase.instance.getProfile();
-    final contacts  = await AppDatabase.instance.getContacts();
-    final settings  = await AppDatabase.instance.getSettings();
-
-    if (contacts.isEmpty) {
-      _showSnackbar(
-        _langIsAr
-            ? 'لا توجد جهات طوارئ. أضف جهة أولاً.'
-            : 'No emergency contacts. Please add one first.',
-        isError: true,
-      );
       return;
     }
 
-    final primary = contacts.firstWhere((c) => c['is_primary'] == 1,
-        orElse: () => contacts.first);
-    final phone       = primary['phone'] ?? '';
-    final countryCode = settings['country_code'] ?? '+962';
-    final fullPhone   = phone.startsWith('+') ? phone : '$countryCode$phone';
+    if (!mounted) return;
 
-    final age        = profile?['age']?.toString()        ?? '—';
-    final sex        = profile?['sex']?.toString()        ?? '—';
-    final allergies  = profile?['allergies']?.toString()  ?? 'None';
-    final conditions = profile?['conditions']?.toString() ?? 'None';
-
-    final position  = await _getLocation();
-    final mapUrl    = position != null
-        ? 'https://maps.google.com/?q=${position.latitude},${position.longitude}'
-        : null;
-
-    final catEn = _categoryDisplay(category, 'en');
-    final catAr = _categoryDisplay(category, 'ar');
-    final urgUp = urgency.toUpperCase();
-    final urgAr = _urgencyAr(urgency);
-
-    final msgEn =
-        'EMERGENCY: $catEn | Urgency: $urgUp\n'
-        'Patient: $age/$sex | Allergies: $allergies | Conditions: $conditions\n'
-        'Location: ${mapUrl ?? "unavailable"}';
-
-    final msgAr =
-        'طارئ: $catAr | الخطورة: $urgAr\n'
-        'المريض: $age/$sex | حساسية: $allergies | أمراض: $conditions\n'
-        'الموقع: ${mapUrl ?? "غير متوفر"}';
-
-    final body = _langIsAr ? msgAr : msgEn;
-    _showSmsDialog(fullPhone, body);
-  }
-
-  void _showSmsDialog(String phone, String body) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => Padding(
-        padding: EdgeInsets.fromLTRB(
-            20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.sms, color: Color(0xFF2563EB)),
-                const SizedBox(width: 10),
-                Text(
-                  AppLanguage.text(context, 'Send Emergency SMS', 'إرسال رسالة طوارئ'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(AppLanguage.text(context, 'To: $phone', 'إلى: $phone'),
-                style: const TextStyle(color: Color(0xFF475569), fontSize: 13)),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12)),
-              child: Text(body,
-                  style: const TextStyle(fontSize: 13, height: 1.5)),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: body));
-                      Navigator.pop(context);
-                      _showSnackbar(AppLanguage.text(context, 'Message copied ✓', 'تم نسخ الرسالة ✓'));
-                    },
-                    icon: const Icon(Icons.copy, size: 18),
-                    label: Text(AppLanguage.text(context, 'Copy', 'نسخ')),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      final encoded = Uri.encodeComponent(body);
-                      final url = Uri.parse('sms:$phone?body=$encoded');
-                      if (await canLaunchUrl(url)) {
-                        await launchUrl(url);
-                      } else {
-                        _showSnackbar(AppLanguage.text(context, 'Cannot open SMS app', 'تعذر فتح تطبيق الرسائل'), isError: true);
-                      }
-                    },
-                    icon: const Icon(Icons.send, size: 18, color: Colors.white),
-                    label: Text(
-                      AppLanguage.text(context, 'Send SMS', 'إرسال'),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+    _showSnackbar(
+      AppLanguage.text(context, 'Cannot open dialer', 'تعذر فتح الاتصال'),
+      isError: true,
     );
   }
 
   // ── Helpers ──
-  String _categoryDisplay(String code, String lang) {
-    const map = {
-      'adult_choking':         {'en': 'Adult Choking',         'ar': 'اختناق بالغ'},
-      'child_choking':         {'en': 'Child Choking',         'ar': 'اختناق طفل'},
-      'asthma':                {'en': 'Asthma Attack',         'ar': 'نوبة ربو'},
-      'anaphylaxis':           {'en': 'Severe Allergy',        'ar': 'حساسية شديدة'},
-      'unconscious_breathing': {'en': 'Unconscious Breathing', 'ar': 'فاقد الوعي'},
-      'not_breathing_cpr':     {'en': 'Not Breathing / CPR',  'ar': 'لا يتنفس / إنعاش'},
-      'bleeding':              {'en': 'Severe Bleeding',       'ar': 'نزيف شديد'},
-      'burns':                 {'en': 'Burn Injury',           'ar': 'حرق'},
-      'fracture':              {'en': 'Fracture / Broken Bone','ar': 'كسر عظمة'},
-      'seizure':               {'en': 'Seizure / Convulsion',  'ar': 'نوبة / تشنج'},
-      'stroke':                {'en': 'Stroke',                'ar': 'سكتة دماغية'},
-    };
-    return map[code]?[lang] ?? code;
-  }
-
-  String _urgencyAr(String urgency) =>
-      const {'high': 'عالية', 'med': 'متوسطة', 'low': 'منخفضة'}[urgency] ?? urgency;
-
-  Color _urgencyColor(String urgency) {
-    switch (urgency) {
-      case 'high': return const Color(0xFFDC2626);
-      case 'med':  return const Color(0xFFF97316);
-      case 'low':  return const Color(0xFF16A34A);
-      default:     return const Color(0xFF475569);
-    }
-  }
-
-  String _urgencyLabel(String urgency) {
-    switch (urgency) {
-      case 'high': return '🚨 HIGH';
-      case 'med':  return '⚠️ MEDIUM';
-      case 'low':  return 'ℹ️ LOW';
-      default:     return urgency.toUpperCase();
-    }
-  }
-
   void _showSnackbar(String msg, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -815,8 +645,9 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                   final msg    = _messages[index];
                   final isUser = msg['sender'] == 'user';
                   if (msg['type'] == 'unknown') return _buildUnknownCard(msg);
-                  if (msg['type'] == 'image')
+                  if (msg['type'] == 'image') {
                     return _buildImageBubble(msg['imagePath'] ?? '', isUser);
+                  }
 
                   return _buildBubble(msg['text'] ?? '', isUser);
                 },
@@ -931,7 +762,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                       color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: const Color(0xFF2563EB).withOpacity(0.3)),
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.3)),
                     ),
                     child: Text(label,
                         style: const TextStyle(
@@ -973,7 +804,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -1008,7 +839,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 6,
                 offset: const Offset(0, 2)),
           ],
@@ -1033,7 +864,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 5,
                 offset: const Offset(0, 2)),
           ],
@@ -1055,17 +886,16 @@ class _ChatbotScreenState extends State<ChatbotScreen>
   // ── Unknown card ──
   Widget _buildUnknownCard(Map<String, dynamic> msg) {
     final lang = msg['lang'] as String? ?? 'en';
-    final isAr = lang == 'ar';
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF97316).withOpacity(0.4)),
+        border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 3)),
         ],
@@ -1136,7 +966,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 12,
             offset: const Offset(0, -3),
           ),

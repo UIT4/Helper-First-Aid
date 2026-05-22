@@ -527,10 +527,12 @@ class AppDatabase {
   }
 
   Future<void> saveSettings(Map<String, dynamic> settings) async {
-    if (await isGuest()) return;
-
     final db = await database;
-    await db.update(Tables.settings, settings, where: 'id = ?', whereArgs: [1]);
+    await db.insert(
+      Tables.settings,
+      {'id': 1, ...settings},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<int> getContentVersion() async {

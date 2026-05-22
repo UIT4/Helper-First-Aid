@@ -1,67 +1,74 @@
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../database/app_database.dart';
+
 import '../constants/api_constants.dart';
+import '../database/app_database.dart';
 
 class SyncService {
   static Future<void> syncIncidents() async {
     final db = AppDatabase.instance;
-
-    // 1. Get unsynced incidents
     final incidents = await db.getUnsyncedIncidents();
 
     if (incidents.isEmpty) return;
 
-    // 2. Prepare payload
     final payload = {
-      'device_id': incidents.first['device_id'],
-      'incidents': incidents.map((e) => {
-        'local_id': e['id'],
-        'created_at': e['created_at'],
-        'lang': e['lang'],
-        'input_text': e['input_text'],
-        'predicted_category_code': e['predicted_category_code'],
-        'confidence': e['confidence'],
-        'urgency': e['urgency'],
-        'lat': e['lat'],
-        'lng': e['lng'],
-        'location_source': e['location_source'],
-        'notes': e['notes'] ?? '',
+      'device_id': incidents.first['device_id'] ?? 'unknown-device',
+      'incidents': incidents.map((incident) {
+        return {
+          'local_id': incident['id'],
+          'created_at': incident['created_at'],
+          'lang': incident['lang'],
+          'input_text': incident['input_text'],
+          'predicted_category_code': incident['predicted_category_code'],
+          'confidence': incident['confidence'],
+          'urgency': incident['urgency'],
+          'lat': incident['lat'],
+          'lng': incident['lng'],
+          'location_source': incident['location_source'],
+          'notes': incident['notes'] ?? '',
+        };
       }).toList(),
     };
 
     try {
-      // 3. Send POST request
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse(ApiConstants.syncIncidents),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: const {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
-      );
+      )
+          .timeout(const Duration(seconds: 12));
 
-      print('Sync payload: ${jsonEncode(payload)}');
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      debugPrint('Sync response: ${response.statusCode} ${response.body}');
 
-      // 4. Handle response
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      if (response.statusCode != 200) return;
 
-        final syncedList = data['synced'] ?? data['results'];
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) return;
 
-        if (syncedList != null) {
-          for (var item in syncedList) {
-            await db.markIncidentSynced(
-              item['local_id'],
-              item['server_id'],
-            );
-          }
+      final syncedList = decoded['synced'] ?? decoded['results'];
+      if (syncedList is! List) return;
+
+      for (final item in syncedList) {
+        if (item is! Map) continue;
+        final localId = _toInt(item['local_id']);
+        final serverId = _toInt(item['server_id']);
+
+        if (localId != null && serverId != null) {
+          await db.markIncidentSynced(localId, serverId);
         }
       }
     } catch (e) {
-      print('Server not available yet');
-      print('Sync error: $e');
+      debugPrint('Incident sync skipped: $e');
     }
+  }
+
+  static int? _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 }
