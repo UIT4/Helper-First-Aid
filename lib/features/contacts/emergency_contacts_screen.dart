@@ -62,68 +62,63 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
 
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => Directionality(
-        textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-        child: AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            AppLanguage.text(context, 'Delete Contact', 'حذف جهة الاتصال'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            AppLanguage.text(
-              context,
-              'Are you sure you want to delete "$name"?',
-              'هل أنت متأكد أنك تريد حذف "$name"؟',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                AppLanguage.text(context, 'Cancel', 'إلغاء'),
-                style: const TextStyle(color: textMuted),
+      builder:
+          (_) => Directionality(
+            textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: danger,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+              title: Text(
+                AppLanguage.text(context, 'Delete Contact', 'حذف جهة الاتصال'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: Text(
+                AppLanguage.text(
+                  context,
+                  'Are you sure you want to delete "$name"?',
+                  'هل أنت متأكد أنك تريد حذف "$name"؟',
                 ),
               ),
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                AppLanguage.text(context, 'Delete', 'حذف'),
-                style: const TextStyle(color: Colors.white),
-              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(
+                    AppLanguage.text(context, 'Cancel', 'إلغاء'),
+                    style: const TextStyle(color: textMuted),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: danger,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(
+                    AppLanguage.text(context, 'Delete', 'حذف'),
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
 
     if (confirm == true) {
       await AppDatabase.instance.deleteContact(id);
 
-      await _loadContacts();
-
-      if (!mounted) return;
-
       _showSnackbar(
         AppLanguage.text(context, 'Contact deleted', 'تم حذف جهة الاتصال'),
       );
+
+      await _loadContacts();
     }
   }
 
   Future<void> _setPrimary(int id) async {
     await AppDatabase.instance.setPrimaryContact(id);
-
-    await _loadContacts();
-
-    if (!mounted) return;
 
     _showSnackbar(
       AppLanguage.text(
@@ -132,232 +127,211 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         'تم تحديث جهة الاتصال الأساسية ✓',
       ),
     );
+
+    await _loadContacts();
   }
 
   Future<void> _showContactDialog({Map<String, dynamic>? existing}) async {
-    if (!mounted) return;
-
     final isArabic = AppLanguage.isArabicContext(context);
 
     final nameCtrl = TextEditingController(
       text: existing?['name']?.toString() ?? '',
     );
+
     final phoneCtrl = TextEditingController(
       text: existing?['phone']?.toString() ?? '',
     );
+
     final relationCtrl = TextEditingController(
       text: existing?['relation']?.toString() ?? '',
     );
 
-    final formKey = GlobalKey<FormState>();
     bool isPrimary = (existing?['is_primary'] ?? 0) == 1;
+    bool isSaving = false;
 
-    final Map<String, dynamic>? savedContact =
-    await showModalBottomSheet<Map<String, dynamic>>(
+    final formKey = GlobalKey<FormState>();
+
+    final bool? saved = await showDialog<bool>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
+      barrierDismissible: false,
+      builder: (ctx) {
         return Directionality(
           textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
           child: StatefulBuilder(
-            builder: (sheetContext, setSheetState) {
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+            builder: (ctx, setDialogState) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(24),
+                titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                title: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDBEAFE),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        existing == null ? Icons.person_add : Icons.edit,
+                        color: primary,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        existing == null
+                            ? AppLanguage.text(
+                              context,
+                              'Add Contact',
+                              'إضافة جهة اتصال',
+                            )
+                            : AppLanguage.text(
+                              context,
+                              'Edit Contact',
+                              'تعديل جهة الاتصال',
+                            ),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                content: SingleChildScrollView(
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 8),
+                        _dialogField(
+                          controller: nameCtrl,
+                          label: AppLanguage.text(
+                            context,
+                            'Full Name',
+                            'الاسم الكامل',
+                          ),
+                          icon: Icons.person,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return AppLanguage.text(
+                                context,
+                                'Name is required',
+                                'الاسم مطلوب',
+                              );
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        _dialogField(
+                          controller: phoneCtrl,
+                          label: AppLanguage.text(
+                            context,
+                            'Phone Number',
+                            'رقم الهاتف',
+                          ),
+                          icon: Icons.phone,
+                          type: TextInputType.phone,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return AppLanguage.text(
+                                context,
+                                'Phone is required',
+                                'رقم الهاتف مطلوب',
+                              );
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        _dialogField(
+                          controller: relationCtrl,
+                          label: AppLanguage.text(
+                            context,
+                            'Relation (e.g. Father)',
+                            'صلة القرابة مثل الأب',
+                          ),
+                          icon: Icons.people,
+                        ),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          value: isPrimary,
+                          onChanged: (v) {
+                            setDialogState(() {
+                              isPrimary = v;
+                            });
+                          },
+                          title: Text(
+                            AppLanguage.text(
+                              context,
+                              'Set as Primary Contact',
+                              'تعيين كجهة أساسية',
+                            ),
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          subtitle: Text(
+                            AppLanguage.text(
+                              context,
+                              'Will be first to receive SMS',
+                              'سيكون أول من تصله رسالة الطوارئ',
+                            ),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: textMuted,
+                            ),
+                          ),
+                          activeThumbColor: primary,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ],
                     ),
                   ),
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                  child: SingleChildScrollView(
-                    child: Form(
-                      key: formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                            child: Container(
-                              width: 44,
-                              height: 5,
-                              margin: const EdgeInsets.only(bottom: 16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE2E8F0),
-                                borderRadius: BorderRadius.circular(100),
-                              ),
+                ),
+                actions: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed:
+                              isSaving ? null : () => Navigator.pop(ctx, false),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: const BorderSide(color: Color(0xFFCBD5E1)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFDBEAFE),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  existing == null
-                                      ? Icons.person_add
-                                      : Icons.edit,
-                                  color: primary,
-                                  size: 22,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  existing == null
-                                      ? AppLanguage.text(
-                                    context,
-                                    'Add Contact',
-                                    'إضافة جهة اتصال',
-                                  )
-                                      : AppLanguage.text(
-                                    context,
-                                    'Edit Contact',
-                                    'تعديل جهة الاتصال',
-                                  ),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: textDark,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            AppLanguage.text(context, 'Cancel', 'إلغاء'),
+                            style: const TextStyle(color: textMuted),
                           ),
-                          const SizedBox(height: 18),
-                          _dialogField(
-                            controller: nameCtrl,
-                            label: AppLanguage.text(
-                              context,
-                              'Full Name',
-                              'الاسم الكامل',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            icon: Icons.person,
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) {
-                                return AppLanguage.text(
-                                  context,
-                                  'Name is required',
-                                  'الاسم مطلوب',
-                                );
-                              }
-                              return null;
-                            },
                           ),
-                          const SizedBox(height: 12),
-                          _dialogField(
-                            controller: phoneCtrl,
-                            label: AppLanguage.text(
-                              context,
-                              'Phone Number',
-                              'رقم الهاتف',
-                            ),
-                            icon: Icons.phone,
-                            type: TextInputType.phone,
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) {
-                                return AppLanguage.text(
-                                  context,
-                                  'Phone is required',
-                                  'رقم الهاتف مطلوب',
-                                );
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          _dialogField(
-                            controller: relationCtrl,
-                            label: AppLanguage.text(
-                              context,
-                              'Relation (e.g. Father)',
-                              'صلة القرابة مثل الأب',
-                            ),
-                            icon: Icons.people,
-                          ),
-                          const SizedBox(height: 8),
-                          SwitchListTile(
-                            value: isPrimary,
-                            onChanged: (v) {
-                              setSheetState(() {
-                                isPrimary = v;
-                              });
-                            },
-                            title: Text(
-                              AppLanguage.text(
-                                context,
-                                'Set as Primary Contact',
-                                'تعيين كجهة أساسية',
-                              ),
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                            subtitle: Text(
-                              AppLanguage.text(
-                                context,
-                                'Will be first to receive SMS',
-                                'سيكون أول من تصله رسالة الطوارئ',
-                              ),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: textMuted,
-                              ),
-                            ),
-                            activeThumbColor: primary,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () {
-                                    Navigator.of(sheetContext).pop(null);
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    side: const BorderSide(
-                                      color: Color(0xFFCBD5E1),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    AppLanguage.text(
-                                      context,
-                                      'Cancel',
-                                      'إلغاء',
-                                    ),
-                                    style: const TextStyle(color: textMuted),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: primary,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  onPressed: () {
+                          onPressed:
+                              isSaving
+                                  ? null
+                                  : () async {
                                     if (!formKey.currentState!.validate()) {
                                       return;
                                     }
+
+                                    setDialogState(() => isSaving = true);
 
                                     final contactData = {
                                       'name': nameCtrl.text.trim(),
@@ -366,34 +340,53 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                                       'is_primary': isPrimary ? 1 : 0,
                                     };
 
-                                    Navigator.of(sheetContext).pop(contactData);
+                                    if (existing == null) {
+                                      await AppDatabase.instance.insertContact(
+                                        contactData,
+                                      );
+                                    } else {
+                                      await AppDatabase.instance.updateContact(
+                                        existing['id'],
+                                        contactData,
+                                      );
+                                    }
+
+                                    if (ctx.mounted) {
+                                      Navigator.pop(ctx, true);
+                                    }
                                   },
-                                  child: Text(
+                          child:
+                              isSaving
+                                  ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                  : Text(
                                     existing == null
                                         ? AppLanguage.text(
-                                      context,
-                                      'Add',
-                                      'إضافة',
-                                    )
+                                          context,
+                                          'Add',
+                                          'إضافة',
+                                        )
                                         : AppLanguage.text(
-                                      context,
-                                      'Save',
-                                      'حفظ',
-                                    ),
+                                          context,
+                                          'Save',
+                                          'حفظ',
+                                        ),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ),
+                ],
               );
             },
           ),
@@ -405,42 +398,22 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
     phoneCtrl.dispose();
     relationCtrl.dispose();
 
-    if (savedContact == null) return;
-
-    try {
-      if (existing == null) {
-        await AppDatabase.instance.insertContact(savedContact);
-      } else {
-        await AppDatabase.instance.updateContact(
-          existing['id'],
-          savedContact,
-        );
-      }
-
-      await _loadContacts();
-
-      if (!mounted) return;
-
+    if (saved == true && mounted) {
       _showSnackbar(
         existing == null
             ? AppLanguage.text(
-          context,
-          'Contact added ✓',
-          'تمت إضافة جهة الاتصال ✓',
-        )
+              context,
+              'Contact added ✓',
+              'تمت إضافة جهة الاتصال ✓',
+            )
             : AppLanguage.text(
-          context,
-          'Contact updated ✓',
-          'تم تحديث جهة الاتصال ✓',
-        ),
+              context,
+              'Contact updated ✓',
+              'تم تحديث جهة الاتصال ✓',
+            ),
       );
-    } catch (e) {
-      if (!mounted) return;
 
-      _showSnackbar(
-        e.toString(),
-        isError: true,
-      );
+      await _loadContacts();
     }
   }
 
@@ -452,9 +425,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         content: Text(msg),
         backgroundColor: isError ? danger : success,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -484,13 +455,12 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
         ),
-        body: _isLoading
-            ? const Center(
-          child: CircularProgressIndicator(color: primary),
-        )
-            : _contacts.isEmpty
-            ? _buildEmptyState()
-            : _buildContactsList(),
+        body:
+            _isLoading
+                ? const Center(child: CircularProgressIndicator(color: primary))
+                : _contacts.isEmpty
+                ? _buildEmptyState()
+                : _buildContactsList(),
         floatingActionButton: FloatingActionButton.extended(
           backgroundColor: primary,
           onPressed: () => _showContactDialog(),
@@ -520,11 +490,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                 color: Color(0xFFDBEAFE),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.contact_phone,
-                size: 60,
-                color: primary,
-              ),
+              child: const Icon(Icons.contact_phone, size: 60, color: primary),
             ),
             const SizedBox(height: 20),
             Text(
@@ -603,7 +569,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         CircleAvatar(
           radius: 26,
           backgroundColor:
-          isPrimary ? const Color(0xFFDBEAFE) : const Color(0xFFF1F5F9),
+              isPrimary ? const Color(0xFFDBEAFE) : const Color(0xFFF1F5F9),
           child: Text(
             firstLetter.toUpperCase(),
             style: TextStyle(
@@ -680,10 +646,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
           if ((contact['relation']?.toString() ?? '').isNotEmpty)
             Text(
               contact['relation'].toString(),
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF94A3B8),
-              ),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
             ),
         ],
       ),
@@ -715,38 +678,39 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
               );
             }
           },
-          itemBuilder: (_) => [
-            PopupMenuItem(
-              value: 'edit',
-              child: _popupItem(
-                icon: Icons.edit,
-                color: primary,
-                text: AppLanguage.text(context, 'Edit', 'تعديل'),
-              ),
-            ),
-            if (!isPrimary)
-              PopupMenuItem(
-                value: 'primary',
-                child: _popupItem(
-                  icon: Icons.star,
-                  color: const Color(0xFFF59E0B),
-                  text: AppLanguage.text(
-                    context,
-                    'Set as Primary',
-                    'تعيين كجهة أساسية',
+          itemBuilder:
+              (_) => [
+                PopupMenuItem(
+                  value: 'edit',
+                  child: _popupItem(
+                    icon: Icons.edit,
+                    color: primary,
+                    text: AppLanguage.text(context, 'Edit', 'تعديل'),
                   ),
                 ),
-              ),
-            PopupMenuItem(
-              value: 'delete',
-              child: _popupItem(
-                icon: Icons.delete,
-                color: danger,
-                text: AppLanguage.text(context, 'Delete', 'حذف'),
-                dangerText: true,
-              ),
-            ),
-          ],
+                if (!isPrimary)
+                  PopupMenuItem(
+                    value: 'primary',
+                    child: _popupItem(
+                      icon: Icons.star,
+                      color: const Color(0xFFF59E0B),
+                      text: AppLanguage.text(
+                        context,
+                        'Set as Primary',
+                        'تعيين كجهة أساسية',
+                      ),
+                    ),
+                  ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: _popupItem(
+                    icon: Icons.delete,
+                    color: danger,
+                    text: AppLanguage.text(context, 'Delete', 'حذف'),
+                    dangerText: true,
+                  ),
+                ),
+              ],
         ),
       ],
     );
@@ -762,10 +726,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 10),
-        Text(
-          text,
-          style: TextStyle(color: dangerText ? danger : textDark),
-        ),
+        Text(text, style: TextStyle(color: dangerText ? danger : textDark)),
       ],
     );
   }
