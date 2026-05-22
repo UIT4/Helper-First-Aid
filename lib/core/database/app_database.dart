@@ -451,12 +451,25 @@ class AppDatabase {
   }
 
   Future<int> insertContact(Map<String, dynamic> contact) async {
-    if (await isGuest()) return -1;
+    if (await isGuest()) {
+      throw Exception('Guest users cannot add contacts');
+    }
+
     final email = await _currentUserEmail();
-    if (email == null) return -1;
+
+    if (email == null || email.trim().isEmpty) {
+      throw Exception('User session not found');
+    }
 
     final db = await database;
-    return db.insert(Tables.contacts, {...contact, 'user_email': email});
+
+    return db.insert(
+      Tables.contacts,
+      {
+        ...contact,
+        'user_email': email,
+      },
+    );
   }
 
   Future<void> updateContact(int id, Map<String, dynamic> contact) async {
