@@ -1,20 +1,91 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/api_constants.dart';
 import '../database/app_database.dart';
 
 class SyncService {
+
+  static Future<String> getOrCreateDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    var id = prefs.getString('device_id');
+
+    if (id == null || id.trim().isEmpty) {
+      final random = Random();
+      id = '${DateTime.now().millisecondsSinceEpoch}${random.nextInt(999999)}';
+      await prefs.setString('device_id', id);
+    }
+
+    return id;
+  }
+
+  static Future<void> syncProfile() async {
+    final db = AppDatabase.instance;
+    final prefs = await SharedPreferences.getInstance();
+
+    if (prefs.getBool('isGuest') ?? false) return;
+
+    final profile = await db.getProfile();
+    if (profile == null) return;
+
+    final contacts = await db.getContacts();
+    final settings = await db.getSettings();
+    final deviceId = await getOrCreateDeviceId();
+
+    final payload = {
+      'device_id': deviceId,
+      'email': prefs.getString('userEmail') ?? '',
+      'full_name': profile['full_name'] ?? '',
+      'age': profile['age'],
+      'sex': profile['sex'] ?? '',
+      'blood_type': profile['blood_type'] ?? '',
+      'allergies': profile['allergies'] ?? '',
+      'conditions': profile['conditions'] ?? '',
+      'medications': profile['medications'] ?? '',
+      'notes': profile['notes'] ?? '',
+      'language': settings['language'] ?? 'en',
+      'country_code': settings['country_code'] ?? '+962',
+      'emergency_number': settings['emergency_number'] ?? '911',
+      'ambulance_number': settings['ambulance_number'] ?? '193',
+      'fire_number': settings['fire_number'] ?? '199',
+      'contacts': contacts.map((contact) {
+        return {
+          'contact_name': contact['name'] ?? contact['contact_name'] ?? '',
+          'phone': contact['phone'] ?? '',
+          'relation': contact['relation'] ?? '',
+        };
+      }).toList(),
+    };
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse(ApiConstants.syncProfile),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
+          .timeout(const Duration(seconds: 12));
+
+      debugPrint('Profile sync response: ${response.statusCode} ${response.body}');
+    } catch (e) {
+      debugPrint('Profile sync skipped: $e');
+    }
+  }
+
   static Future<void> syncIncidents() async {
     final db = AppDatabase.instance;
     final incidents = await db.getUnsyncedIncidents();
 
     if (incidents.isEmpty) return;
 
+    final deviceId = await getOrCreateDeviceId();
+
     final payload = {
-      'device_id': incidents.first['device_id'] ?? 'unknown-device',
+      'device_id': incidents.first['device_id'] ?? deviceId,
       'incidents': incidents.map((incident) {
         return {
           'local_id': incident['id'],

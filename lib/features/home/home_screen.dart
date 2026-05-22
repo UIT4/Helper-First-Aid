@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/database/app_database.dart';
 import '../../core/language/app_language.dart';
 import '../../core/network/content_update_service.dart';
+import '../../core/network/sync_service.dart';
 
 import '../auth/login_screen.dart';
 import '../auth/signup_screen.dart';
@@ -69,6 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isCheckingUpdates = true);
 
     await ContentUpdateService.checkForUpdate();
+    await SyncService.syncProfile();
+    await SyncService.syncIncidents();
 
     if (!mounted) return;
 

@@ -29,7 +29,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 7,
+      version: 8,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -70,7 +70,11 @@ class AppDatabase {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         code TEXT UNIQUE,
         name_en TEXT,
-        name_ar TEXT
+        name_ar TEXT,
+        urgency_level TEXT DEFAULT 'medium',
+        icon_key TEXT DEFAULT '',
+        sort_order INTEGER DEFAULT 1,
+        is_active INTEGER DEFAULT 1
       )
     ''');
 
@@ -83,8 +87,12 @@ class AppDatabase {
         title_ar TEXT,
         body_en TEXT,
         body_ar TEXT,
+        warning_en TEXT,
+        warning_ar TEXT,
+        image_path TEXT,
         image_asset TEXT,
         updated_at TEXT,
+        is_active INTEGER DEFAULT 1,
         FOREIGN KEY (category_code) REFERENCES ${Tables.categories}(code)
       )
     ''');
@@ -273,6 +281,18 @@ class AppDatabase {
         Tables.settings,
         "country TEXT DEFAULT 'Jordan'",
       );
+    }
+
+    if (oldVersion < 8) {
+      await _safeAddColumn(db, Tables.categories, "urgency_level TEXT DEFAULT 'medium'");
+      await _safeAddColumn(db, Tables.categories, "icon_key TEXT DEFAULT ''");
+      await _safeAddColumn(db, Tables.categories, "sort_order INTEGER DEFAULT 1");
+      await _safeAddColumn(db, Tables.categories, "is_active INTEGER DEFAULT 1");
+
+      await _safeAddColumn(db, Tables.guidanceSteps, 'warning_en TEXT');
+      await _safeAddColumn(db, Tables.guidanceSteps, 'warning_ar TEXT');
+      await _safeAddColumn(db, Tables.guidanceSteps, 'image_path TEXT');
+      await _safeAddColumn(db, Tables.guidanceSteps, 'is_active INTEGER DEFAULT 1');
     }
   }
 
@@ -490,15 +510,20 @@ class AppDatabase {
 
   Future<List<Map<String, dynamic>>> getCategories() async {
     final db = await database;
-    return db.query(Tables.categories);
+    return db.query(
+      Tables.categories,
+      where: 'is_active = ?',
+      whereArgs: [1],
+      orderBy: 'sort_order ASC, id ASC',
+    );
   }
 
   Future<List<Map<String, dynamic>>> getStepsByCategory(String categoryCode) async {
     final db = await database;
     return db.query(
       Tables.guidanceSteps,
-      where: 'category_code = ?',
-      whereArgs: [categoryCode],
+      where: 'category_code = ? AND is_active = ?',
+      whereArgs: [categoryCode, 1],
       orderBy: 'step_no ASC',
     );
   }

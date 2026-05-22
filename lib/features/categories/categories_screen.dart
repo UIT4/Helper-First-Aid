@@ -17,15 +17,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   static const Color primary = Color(0xFF2563EB);
 
-  static const List<String> _allowedCodes = [
-    'adult_choking',
-    'child_choking',
-    'asthma',
-    'anaphylaxis',
-    'unconscious_breathing',
-    'not_breathing_cpr',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -36,15 +27,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     try {
       final cats = await AppDatabase.instance.getCategories();
 
-      final filteredCats = cats.where((cat) {
-        final code = (cat['code'] ?? '').toString();
-        return _allowedCodes.contains(code);
-      }).toList();
-
       if (!mounted) return;
 
       setState(() {
-        _categories = filteredCats;
+        _categories = cats;
         _isLoading = false;
       });
     } catch (_) {
@@ -122,57 +108,29 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   String _urgencyLabel(
       BuildContext context,
-      String code,
+      String urgency,
       ) {
-    if ([
-      'adult_choking',
-      'child_choking',
-      'anaphylaxis',
-      'not_breathing_cpr',
-    ].contains(code)) {
-      return AppLanguage.text(
-        context,
-        'HIGH',
-        'عالي',
-      );
+    switch (urgency.toLowerCase()) {
+      case 'high':
+      case 'extreme':
+        return AppLanguage.text(context, 'HIGH', 'عالي');
+      case 'medium':
+        return AppLanguage.text(context, 'MEDIUM', 'متوسط');
+      default:
+        return AppLanguage.text(context, 'LOW', 'منخفض');
     }
-
-    if ([
-      'asthma',
-      'unconscious_breathing',
-    ].contains(code)) {
-      return AppLanguage.text(
-        context,
-        'MEDIUM',
-        'متوسط',
-      );
-    }
-
-    return AppLanguage.text(
-      context,
-      'LOW',
-      'منخفض',
-    );
   }
 
-  Color _urgencyColor(String code) {
-    if ([
-      'adult_choking',
-      'child_choking',
-      'anaphylaxis',
-      'not_breathing_cpr',
-    ].contains(code)) {
-      return const Color(0xFFDC2626);
+  Color _urgencyColor(String urgency) {
+    switch (urgency.toLowerCase()) {
+      case 'high':
+      case 'extreme':
+        return const Color(0xFFDC2626);
+      case 'medium':
+        return const Color(0xFFF97316);
+      default:
+        return const Color(0xFF16A34A);
     }
-
-    if ([
-      'asthma',
-      'unconscious_breathing',
-    ].contains(code)) {
-      return const Color(0xFFF97316);
-    }
-
-    return const Color(0xFF16A34A);
   }
 
   String _categoryName(
@@ -298,8 +256,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       ) {
     final color = _categoryColor(code);
     final icon = _categoryIcon(code);
-    final urgency = _urgencyLabel(context, code);
-    final urgencyColor = _urgencyColor(code);
+    final urgencyValue = (cat['urgency_level'] ?? 'medium').toString();
+    final urgency = _urgencyLabel(context, urgencyValue);
+    final urgencyColor = _urgencyColor(urgencyValue);
     final name = _categoryName(context, cat);
 
     return InkWell(

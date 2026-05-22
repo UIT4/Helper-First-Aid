@@ -60,13 +60,34 @@ class ContentUpdateService {
 
         for (final cat in categories) {
           if (cat is Map<String, dynamic>) {
-            await txn.insert(Tables.categories, cat);
+            await txn.insert(Tables.categories, {
+              'code': (cat['code'] ?? cat['CODE'] ?? '').toString(),
+              'name_en': (cat['name_en'] ?? '').toString(),
+              'name_ar': (cat['name_ar'] ?? '').toString(),
+              'urgency_level': (cat['urgency_level'] ?? 'medium').toString(),
+              'icon_key': (cat['icon_key'] ?? '').toString(),
+              'sort_order': _toInt(cat['sort_order']) ?? 1,
+              'is_active': _toInt(cat['is_active']) ?? 1,
+            });
           }
         }
 
         for (final step in steps) {
           if (step is Map<String, dynamic>) {
-            await txn.insert(Tables.guidanceSteps, step);
+            await txn.insert(Tables.guidanceSteps, {
+              'category_code': (step['category_code'] ?? '').toString(),
+              'step_no': _toInt(step['step_no']) ?? 1,
+              'title_en': (step['title_en'] ?? '').toString(),
+              'title_ar': (step['title_ar'] ?? '').toString(),
+              'body_en': (step['body_en'] ?? '').toString(),
+              'body_ar': (step['body_ar'] ?? '').toString(),
+              'warning_en': (step['warning_en'] ?? '').toString(),
+              'warning_ar': (step['warning_ar'] ?? '').toString(),
+              'image_path': (step['image_path'] ?? '').toString(),
+              'image_asset': (step['image_asset'] ?? step['image_path'] ?? '').toString(),
+              'updated_at': (step['updated_at'] ?? DateTime.now().toIso8601String()).toString(),
+              'is_active': _toInt(step['is_active']) ?? 1,
+            });
           }
         }
       });
