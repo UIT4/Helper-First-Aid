@@ -885,7 +885,6 @@ class _ChatbotScreenState extends State<ChatbotScreen>
 
   // ── Unknown card ──
   Widget _buildUnknownCard(Map<String, dynamic> msg) {
-    final lang = msg['lang'] as String? ?? 'en';
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(16),
