@@ -3,7 +3,9 @@ import 'app_colors.dart';
 
 class AppTheme {
 
-  static ThemeData lightTheme = ThemeData(
+  static ThemeData lightTheme() {
+
+    return ThemeData(
 
     scaffoldBackgroundColor: AppColors.background,
 
@@ -48,6 +50,7 @@ class AppTheme {
         color: AppColors.textSecondary,
         fontSize: 16,
       ),
-    ),
-  );
+      ),
+    );
+  }
 }

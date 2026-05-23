@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/constants/app_colors.dart';
 import '../../core/database/app_database.dart';
 import '../../core/language/app_language.dart';
 import '../auth/login_screen.dart';
@@ -17,7 +18,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _ambulanceCtrl = TextEditingController();
   final _fireCtrl = TextEditingController();
 
-  String _language = 'en';
+  String _language = 'auto';
 
   bool _largeText = false;
   bool _isLoading = true;
@@ -25,7 +26,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showAdvanced = false;
   bool _isGuest = false;
 
-  static const Color primary = Color(0xFF2563EB);
   static const Color danger = Color(0xFFDC2626);
   static const Color success = Color(0xFF16A34A);
   static const Color warning = Color(0xFFF97316);
@@ -60,7 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       setState(() {
         final savedLang = settings['language'] ?? globalLang;
-        _language = ['en', 'ar', 'auto'].contains(savedLang) ? savedLang : 'en';
+        _language = ['en', 'ar', 'auto'].contains(savedLang) ? savedLang : 'auto';
 
         _emergencyCtrl.text = settings['emergency_number'] ?? '911';
         _ambulanceCtrl.text = settings['ambulance_number'] ?? '193';
@@ -72,9 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
     } catch (_) {
       if (!mounted) return;
-
       setState(() => _isLoading = false);
-
       _showSnackbar(
         AppLanguage.text(
           context,
@@ -115,9 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       Navigator.pop(context, true);
     } catch (_) {
       if (!mounted) return;
-
       setState(() => _isSaving = false);
-
       _showSnackbar(
         AppLanguage.text(
           context,
@@ -131,21 +127,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _logout() async {
     final isAr = AppLanguage.isArabicContext(context);
+
     final title = _isGuest
         ? AppLanguage.text(context, 'Exit Guest Mode', 'الخروج من وضع الضيف')
         : AppLanguage.text(context, 'Logout', 'تسجيل الخروج');
 
     final message = _isGuest
         ? AppLanguage.text(
-            context,
-            'Do you want to leave Guest Mode and go to the login screen?',
-            'هل تريد الخروج من وضع الضيف والانتقال إلى شاشة تسجيل الدخول؟',
-          )
+      context,
+      'Do you want to leave Guest Mode and go to the login screen?',
+      'هل تريد الخروج من وضع الضيف والانتقال إلى شاشة تسجيل الدخول؟',
+    )
         : AppLanguage.text(
-            context,
-            'Are you sure you want to logout?',
-            'هل أنت متأكد أنك تريد تسجيل الخروج؟',
-          );
+      context,
+      'Are you sure you want to logout?',
+      'هل أنت متأكد أنك تريد تسجيل الخروج؟',
+    );
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -153,10 +150,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
         child: AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           content: Text(message),
           actions: [
             TextButton(
@@ -166,10 +160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: danger),
               onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                title,
-                style: const TextStyle(color: Colors.white),
-              ),
+              child: Text(title, style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -187,7 +178,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
+          (route) => false,
     );
   }
 
@@ -224,53 +215,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: Colors.white,
             ),
           ),
-          backgroundColor: primary,
+          backgroundColor: AppColors.primary,
           centerTitle: true,
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: primary))
+            ? Center(child: CircularProgressIndicator(color: AppColors.primary))
             : SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _sectionTitle(
-                AppLanguage.text(
-                  context,
-                  'Language Preferences',
-                  'تفضيلات اللغة',
-                ),
+                AppLanguage.text(context, 'Language Preferences', 'تفضيلات اللغة'),
                 Icons.language,
               ),
               const SizedBox(height: 12),
               _buildLanguageDropdownCard(),
-              const SizedBox(height: 24),
 
+              const SizedBox(height: 24),
               _sectionTitle(
-                AppLanguage.text(
-                  context,
-                  'Emergency Number',
-                  'رقم الطوارئ',
-                ),
+                AppLanguage.text(context, 'Emergency Number', 'رقم الطوارئ'),
                 Icons.call,
               ),
               const SizedBox(height: 12),
               _buildNumberCard(
-                label: AppLanguage.text(
-                  context,
-                  'Emergency Number',
-                  'رقم الطوارئ الموحد',
-                ),
+                label: AppLanguage.text(context, 'Emergency Number', 'رقم الطوارئ الموحد'),
                 controller: _emergencyCtrl,
                 icon: Icons.call,
                 color: danger,
-                hint: AppLanguage.text(
-                  context,
-                  'Default: 911',
-                  'الافتراضي: 911',
-                ),
+                hint: AppLanguage.text(context, 'Default: 911', 'الافتراضي: 911'),
                 description: AppLanguage.text(
                   context,
                   'Used for calls and emergency messages',
@@ -280,34 +255,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               const SizedBox(height: 24),
               _sectionTitle(
-                AppLanguage.text(
-                  context,
-                  'Accessibility',
-                  'سهولة الاستخدام',
-                ),
+                AppLanguage.text(context, 'Accessibility', 'سهولة الاستخدام'),
                 Icons.accessibility_new,
               ),
               const SizedBox(height: 12),
               _buildLargeTextCard(),
 
               const SizedBox(height: 24),
+              _sectionTitle(
+                AppLanguage.text(context, 'Theme Colors', 'ألوان التطبيق'),
+                Icons.palette,
+              ),
+              const SizedBox(height: 12),
+              _buildThemeSelector(),
+
+              const SizedBox(height: 24),
               _buildAdvancedToggle(),
               if (_showAdvanced) ...[
                 const SizedBox(height: 14),
                 _buildNumberCard(
-                  label: AppLanguage.text(
-                    context,
-                    'Ambulance',
-                    'الإسعاف',
-                  ),
+                  label: AppLanguage.text(context, 'Ambulance', 'الإسعاف'),
                   controller: _ambulanceCtrl,
                   icon: Icons.local_hospital,
                   color: warning,
-                  hint: AppLanguage.text(
-                    context,
-                    'Default: 193',
-                    'الافتراضي: 193',
-                  ),
+                  hint: AppLanguage.text(context, 'Default: 193', 'الافتراضي: 193'),
                   description: AppLanguage.text(
                     context,
                     'Optional ambulance number',
@@ -316,19 +287,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 14),
                 _buildNumberCard(
-                  label: AppLanguage.text(
-                    context,
-                    'Fire Department',
-                    'الدفاع المدني / الإطفاء',
-                  ),
+                  label: AppLanguage.text(context, 'Fire Department', 'الدفاع المدني / الإطفاء'),
                   controller: _fireCtrl,
                   icon: Icons.local_fire_department,
                   color: warning,
-                  hint: AppLanguage.text(
-                    context,
-                    'Default: 199',
-                    'الافتراضي: 199',
-                  ),
+                  hint: AppLanguage.text(context, 'Default: 199', 'الافتراضي: 199'),
                   description: AppLanguage.text(
                     context,
                     'Optional fire department number',
@@ -351,13 +314,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildThemeSelector() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _themeButton(color: AppColors.blue, themeName: 'blue'),
+          _themeButton(color: AppColors.orange, themeName: 'orange'),
+          _themeButton(color: AppColors.purple, themeName: 'purple'),
+        ],
+      ),
+    );
+  }
+
+  Widget _themeButton({
+    required Color color,
+    required String themeName,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          AppColors.changeTheme(themeName);
+        });
+
+        _showSnackbar(
+          AppLanguage.text(
+            context,
+            'Theme color changed',
+            'تم تغيير لون التطبيق',
+          ),
+        );
+      },
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColors.primary == color ? textDark : Colors.white,
+            width: AppColors.primary == color ? 4 : 3,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.35),
+              blurRadius: 12,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
       height: 58,
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primary,
+          backgroundColor: AppColors.primary,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 2,
         ),
@@ -366,21 +383,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ? const SizedBox(
           width: 20,
           height: 20,
-          child: CircularProgressIndicator(
-            color: Colors.white,
-            strokeWidth: 2,
-          ),
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         )
             : const Icon(Icons.save, color: Colors.white),
         label: Text(
           _isSaving
               ? AppLanguage.text(context, 'Saving...', 'جاري الحفظ...')
               : AppLanguage.text(context, 'Save Changes', 'حفظ التغييرات'),
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),
     );
@@ -403,11 +413,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _isGuest ? 'Exit Guest Mode' : 'Logout',
             _isGuest ? 'الخروج من وضع الضيف' : 'تسجيل الخروج',
           ),
-          style: const TextStyle(
-            color: danger,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
+          style: const TextStyle(color: danger, fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),
     );
@@ -416,7 +422,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _sectionTitle(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: primary, size: 22),
+        Icon(icon, color: AppColors.primary, size: 22),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -438,7 +444,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: _cardDecoration(),
       child: Row(
         children: [
-          _iconBox(Icons.translate, primary),
+          _iconBox(Icons.translate, AppColors.primary),
           const SizedBox(width: 14),
           Expanded(
             child: DropdownButtonHideUnderline(
@@ -448,9 +454,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 items: [
                   DropdownMenuItem(
                     value: 'auto',
-                    child: Text(
-                      AppLanguage.text(context, 'Auto Detect', 'تحديد تلقائي'),
-                    ),
+                    child: Text(AppLanguage.text(context, 'Auto Detect', 'تحديد تلقائي')),
                   ),
                   const DropdownMenuItem(value: 'en', child: Text('English')),
                   const DropdownMenuItem(value: 'ar', child: Text('العربية')),
@@ -486,13 +490,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: TextField(
               controller: controller,
               keyboardType: TextInputType.phone,
-              textAlign: AppLanguage.isArabicContext(context)
-                  ? TextAlign.right
-                  : TextAlign.left,
-              style: TextStyle(
-                fontSize: _titleSize,
-                fontWeight: FontWeight.w600,
-              ),
+              textAlign: AppLanguage.isArabicContext(context) ? TextAlign.right : TextAlign.left,
+              style: TextStyle(fontSize: _titleSize, fontWeight: FontWeight.w600),
               decoration: InputDecoration(
                 labelText: label,
                 hintText: hint,
@@ -513,16 +512,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: SwitchListTile(
         contentPadding: EdgeInsets.zero,
         value: _largeText,
-        activeThumbColor: primary,
+        activeThumbColor: AppColors.primary,
         onChanged: (value) => setState(() => _largeText = value),
-        secondary: _iconBox(Icons.text_fields, primary),
+        secondary: _iconBox(Icons.text_fields, AppColors.primary),
         title: Text(
           AppLanguage.text(context, 'Large Text Mode', 'وضع النص الكبير'),
-          style: TextStyle(
-            fontSize: _titleSize,
-            fontWeight: FontWeight.bold,
-            color: textDark,
-          ),
+          style: TextStyle(fontSize: _titleSize, fontWeight: FontWeight.bold, color: textDark),
         ),
         subtitle: Text(
           AppLanguage.text(
@@ -545,7 +540,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         decoration: _cardDecoration(),
         child: Row(
           children: [
-            const Icon(Icons.tune, color: primary),
+            Icon(Icons.tune, color: AppColors.primary),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -554,17 +549,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'Advanced Emergency Numbers',
                   'أرقام طوارئ إضافية ومتقدمة',
                 ),
-                style: TextStyle(
-                  fontSize: _titleSize,
-                  fontWeight: FontWeight.bold,
-                  color: textDark,
-                ),
+                style: TextStyle(fontSize: _titleSize, fontWeight: FontWeight.bold, color: textDark),
               ),
             ),
             Icon(
-              _showAdvanced
-                  ? Icons.keyboard_arrow_up
-                  : Icons.keyboard_arrow_down,
+              _showAdvanced ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
               color: textMuted,
             ),
           ],
@@ -593,11 +582,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'This app provides emergency guidance only. It is not a substitute for professional medical help.',
                 'يقدم هذا التطبيق إرشادات طوارئ فقط، ولا يعتبر بديلاً عن المساعدة الطبية المهنية المتخصصة.',
               ),
-              style: TextStyle(
-                fontSize: _bodySize,
-                color: const Color(0xFF7C2D12),
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: _bodySize, color: const Color(0xFF7C2D12), height: 1.5),
             ),
           ),
         ],

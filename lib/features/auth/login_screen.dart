@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/database/app_database.dart';
 import '../../core/language/app_language.dart';
 import '../home/home_screen.dart';
+import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -166,130 +167,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _forgotPassword() {
-    final isArabic = AppLanguage.isArabicContext(context);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (_) {
-        return Directionality(
-          textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 22,
-              right: 22,
-              top: 22,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 22,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.lock_reset_rounded, size: 50, color: primary),
-                  const SizedBox(height: 12),
-                  Text(
-                    AppLanguage.text(context, 'Reset Password', 'إعادة تعيين كلمة المرور'),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppLanguage.text(
-                      context,
-                      'Password reset is available by phone number only.',
-                      'استرجاع كلمة المرور متاح عبر رقم الهاتف فقط.',
-                    ),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: textMuted),
-                  ),
-                  const SizedBox(height: 20),
-                  _resetOption(
-                    icon: Icons.sms_outlined,
-                    title: AppLanguage.text(
-                      context,
-                      'Reset by Phone Number',
-                      'استرجاع بواسطة رقم الهاتف',
-                    ),
-                    subtitle: AppLanguage.text(
-                      context,
-                      'Verification code will be sent by SMS later',
-                      'سيتم إرسال رمز تحقق للهاتف لاحقاً',
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showSnack(
-                        AppLanguage.text(
-                          context,
-                          'SMS service will be connected later',
-                          'ربط خدمة SMS لاحقاً',
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _resetOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    final isArabic = AppLanguage.isArabicContext(context);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          borderRadius: BorderRadius.circular(16),
-          color: background,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: primary, size: 30),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment:
-                isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    textAlign: isArabic ? TextAlign.right : TextAlign.left,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    textAlign: isArabic ? TextAlign.right : TextAlign.left,
-                    style: const TextStyle(color: textMuted, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-          ],
-        ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ForgotPasswordScreen(),
       ),
     );
   }
@@ -411,7 +292,11 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           _inputField(
             controller: _emailCtrl,
-            hint: AppLanguage.text(context, 'Gmail Email', 'البريد الإلكتروني Gmail'),
+            hint: AppLanguage.text(
+              context,
+              'Gmail Email',
+              'البريد الإلكتروني Gmail',
+            ),
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
           ),
@@ -485,7 +370,9 @@ class _LoginScreenState extends State<LoginScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
           elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
         ),
         child: Text(
           AppLanguage.text(context, 'Log in', 'تسجيل الدخول'),
