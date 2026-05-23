@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/constants/app_colors.dart';
 import '../../core/database/app_database.dart';
 import '../../core/language/app_language.dart';
 
@@ -20,21 +20,20 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   final _ageController = TextEditingController();
   final _notesController = TextEditingController();
 
-  final _allergyOtherController = TextEditingController();
-  final _conditionOtherController = TextEditingController();
-  final _medicationOtherController = TextEditingController();
-
   String _selectedSex = 'Male';
   String? _selectedBloodType;
 
-  String? _selectedAllergy;
-  String? _selectedAllergyDetail;
+  final Set<String> _selectedAllergies = {};
+  final Set<String> _selectedAllergyDetails = {};
+  final Map<String, Set<String>> _selectedAllergySubDetails = {};
 
-  String? _selectedCondition;
-  String? _selectedConditionDetail;
+  final Set<String> _selectedConditions = {};
+  final Set<String> _selectedConditionDetails = {};
+  final Map<String, Set<String>> _selectedConditionSubDetails = {};
 
-  String? _selectedMedication;
-  String? _selectedMedicationDetail;
+  final Set<String> _selectedMedications = {};
+  final Set<String> _selectedMedicationDetails = {};
+  final Map<String, Set<String>> _selectedMedicationSubDetails = {};
 
   String _birthDate = '—';
   String _country = '—';
@@ -52,6 +51,11 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   static const Color textDark = Color(0xFF0F172A);
   static const Color textMuted = Color(0xFF64748B);
 
+  final List<Map<String, String>> _sexItems = const [
+    {'en': 'Male', 'ar': 'ذكر'},
+    {'en': 'Female', 'ar': 'أنثى'},
+  ];
+
   final List<Map<String, String>> _bloodTypes = const [
     {'en': 'A+', 'ar': 'A+'},
     {'en': 'A-', 'ar': 'A-'},
@@ -68,7 +72,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     {'en': 'Food Allergy', 'ar': 'حساسية طعام'},
     {'en': 'Medication Allergy', 'ar': 'حساسية أدوية'},
     {'en': 'Insect Allergy', 'ar': 'حساسية حشرات'},
-    {'en': 'Other', 'ar': 'أخرى'},
   ];
 
   final List<Map<String, String>> _foodAllergyDetails = const [
@@ -77,7 +80,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     {'en': 'Eggs', 'ar': 'بيض'},
     {'en': 'Peanuts', 'ar': 'فول سوداني'},
     {'en': 'Wheat', 'ar': 'قمح'},
-    {'en': 'Other', 'ar': 'أخرى'},
   ];
 
   final List<Map<String, String>> _allergyOtherDetails = const [
@@ -86,8 +88,55 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     {'en': 'Animal Hair', 'ar': 'شعر الحيوانات'},
     {'en': 'Latex', 'ar': 'لاتكس'},
     {'en': 'Perfume', 'ar': 'عطور'},
-    {'en': 'Other', 'ar': 'أخرى'},
   ];
+
+  final Map<String, List<Map<String, String>>> _allergySubDetails = const {
+    'Milk': [
+      {'en': 'Cow Milk', 'ar': 'حليب البقر'},
+      {'en': 'Cheese', 'ar': 'جبنة'},
+      {'en': 'Yogurt', 'ar': 'لبن'},
+      {'en': 'Butter', 'ar': 'زبدة'},
+      {'en': 'Cream', 'ar': 'قشطة'},
+    ],
+    'Eggs': [
+      {'en': 'Boiled Eggs', 'ar': 'بيض مسلوق'},
+      {'en': 'Fried Eggs', 'ar': 'بيض مقلي'},
+      {'en': 'Food containing eggs', 'ar': 'أطعمة تحتوي على البيض'},
+    ],
+    'Fish': [
+      {'en': 'White Fish', 'ar': 'سمك أبيض'},
+      {'en': 'Tuna', 'ar': 'تونة'},
+      {'en': 'Seafood', 'ar': 'مأكولات بحرية'},
+    ],
+    'Peanuts': [
+      {'en': 'Peanut Butter', 'ar': 'زبدة الفول السوداني'},
+      {'en': 'Mixed Nuts', 'ar': 'مكسرات مشكلة'},
+      {'en': 'Food containing peanuts', 'ar': 'أطعمة تحتوي على فول سوداني'},
+    ],
+    'Wheat': [
+      {'en': 'Bread', 'ar': 'خبز'},
+      {'en': 'Pasta', 'ar': 'معكرونة'},
+      {'en': 'Flour', 'ar': 'طحين'},
+    ],
+    'Dust': [
+      {'en': 'House Dust', 'ar': 'غبار المنزل'},
+      {'en': 'Street Dust', 'ar': 'غبار الشارع'},
+    ],
+    'Pollen': [
+      {'en': 'Spring Pollen', 'ar': 'حبوب لقاح الربيع'},
+      {'en': 'Tree Pollen', 'ar': 'حبوب لقاح الأشجار'},
+    ],
+    'Inhaler': [
+      {'en': 'Blue Reliever Inhaler', 'ar': 'بخاخ أزرق إسعافي'},
+      {'en': 'Preventer Inhaler', 'ar': 'بخاخ وقائي'},
+      {'en': 'Nebulizer', 'ar': 'جهاز تبخيرة'},
+    ],
+    'Insulin': [
+      {'en': 'Rapid Acting', 'ar': 'سريع المفعول'},
+      {'en': 'Long Acting', 'ar': 'طويل المفعول'},
+      {'en': 'Insulin Pen', 'ar': 'قلم إنسولين'},
+    ],
+  };
 
   final List<Map<String, String>> _conditions = const [
     {'en': 'None', 'ar': 'لا يوجد'},
@@ -95,7 +144,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     {'en': 'Diabetes', 'ar': 'سكري'},
     {'en': 'Heart Disease', 'ar': 'مرض قلب'},
     {'en': 'High Blood Pressure', 'ar': 'ضغط مرتفع'},
-    {'en': 'Other', 'ar': 'أخرى'},
   ];
 
   final List<Map<String, String>> _conditionDetails = const [
@@ -104,14 +152,35 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     {'en': 'Severe', 'ar': 'شديد'},
     {'en': 'Under Treatment', 'ar': 'تحت العلاج'},
     {'en': 'No Details', 'ar': 'لا توجد تفاصيل'},
-    {'en': 'Other', 'ar': 'أخرى'},
   ];
+
+  final Map<String, List<Map<String, String>>> _conditionSubDetails = const {
+    'Asthma': [
+      {'en': 'Exercise Triggered', 'ar': 'يحدث مع الجهد'},
+      {'en': 'Allergy Triggered', 'ar': 'يحدث بسبب الحساسية'},
+      {'en': 'Uses Inhaler', 'ar': 'يستخدم بخاخ'},
+    ],
+    'Diabetes': [
+      {'en': 'Type 1', 'ar': 'النوع الأول'},
+      {'en': 'Type 2', 'ar': 'النوع الثاني'},
+      {'en': 'Uses Insulin', 'ar': 'يستخدم إنسولين'},
+    ],
+    'Heart Disease': [
+      {'en': 'Chest Pain History', 'ar': 'تاريخ ألم صدر'},
+      {'en': 'Heart Medication', 'ar': 'دواء قلب'},
+      {'en': 'Previous Surgery', 'ar': 'عملية سابقة'},
+    ],
+    'High Blood Pressure': [
+      {'en': 'Controlled', 'ar': 'مسيطر عليه'},
+      {'en': 'Not Controlled', 'ar': 'غير مسيطر عليه'},
+      {'en': 'Uses Pills', 'ar': 'يستخدم حبوب'},
+    ],
+  };
 
   final List<Map<String, String>> _medications = const [
     {'en': 'None', 'ar': 'لا يوجد'},
     {'en': 'Daily Medication', 'ar': 'دواء يومي'},
     {'en': 'Emergency Medication', 'ar': 'دواء طوارئ'},
-    {'en': 'Other', 'ar': 'أخرى'},
   ];
 
   final List<Map<String, String>> _medicationDetails = const [
@@ -120,8 +189,34 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     {'en': 'Blood Pressure Pills', 'ar': 'حبوب ضغط'},
     {'en': 'Heart Medication', 'ar': 'دواء قلب'},
     {'en': 'Painkiller', 'ar': 'مسكن'},
-    {'en': 'Other', 'ar': 'أخرى'},
   ];
+
+  final Map<String, List<Map<String, String>>> _medicationSubDetails = const {
+    'Inhaler': [
+      {'en': 'Blue Reliever Inhaler', 'ar': 'بخاخ أزرق إسعافي'},
+      {'en': 'Preventer Inhaler', 'ar': 'بخاخ وقائي'},
+      {'en': 'Nebulizer', 'ar': 'جهاز تبخيرة'},
+    ],
+    'Insulin': [
+      {'en': 'Rapid Acting', 'ar': 'سريع المفعول'},
+      {'en': 'Long Acting', 'ar': 'طويل المفعول'},
+      {'en': 'Insulin Pen', 'ar': 'قلم إنسولين'},
+    ],
+    'Blood Pressure Pills': [
+      {'en': 'Morning Dose', 'ar': 'جرعة صباحية'},
+      {'en': 'Evening Dose', 'ar': 'جرعة مسائية'},
+      {'en': 'Unknown Name', 'ar': 'الاسم غير معروف'},
+    ],
+    'Heart Medication': [
+      {'en': 'Aspirin', 'ar': 'أسبرين'},
+      {'en': 'Nitroglycerin', 'ar': 'نيتروغليسرين'},
+      {'en': 'Unknown Name', 'ar': 'الاسم غير معروف'},
+    ],
+    'Painkiller': [
+      {'en': 'Paracetamol', 'ar': 'باراسيتامول'},
+      {'en': 'Ibuprofen', 'ar': 'آيبوبروفين'},
+    ],
+  };
 
   @override
   void initState() {
@@ -134,9 +229,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     _nameController.dispose();
     _ageController.dispose();
     _notesController.dispose();
-    _allergyOtherController.dispose();
-    _conditionOtherController.dispose();
-    _medicationOtherController.dispose();
     super.dispose();
   }
 
@@ -175,9 +267,9 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       _notesController.text = profile['notes']?.toString() ?? '';
     } else {
       _nameController.text = prefs.getString('registeredName') ?? '';
-      _selectedAllergy = 'None';
-      _selectedCondition = 'None';
-      _selectedMedication = 'None';
+      _selectedAllergies.add('None');
+      _selectedConditions.add('None');
+      _selectedMedications.add('None');
     }
 
     if (!mounted) return;
@@ -196,119 +288,121 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   }
 
   void _parseAllergy(String value) {
-    _selectedAllergy = 'None';
-    _selectedAllergyDetail = null;
-    _allergyOtherController.clear();
+    _selectedAllergies.clear();
+    _selectedAllergyDetails.clear();
+    _selectedAllergySubDetails.clear();
 
-    if (value.trim().isEmpty || value == 'None') return;
-
-    final parts = value.split(':');
-    final main = parts.first.trim();
-    final detail = parts.length > 1 ? parts.sublist(1).join(':').trim() : null;
-
-    _selectedAllergy = _containsValue(_allergies, main) ? main : 'Other';
-
-    if (detail != null && detail.isNotEmpty) {
-      final detailsList = _selectedAllergy == 'Food Allergy'
-          ? _foodAllergyDetails
-          : _allergyOtherDetails;
-
-      if (_containsValue(detailsList, detail)) {
-        _selectedAllergyDetail = detail;
-      } else {
-        _selectedAllergyDetail = 'Other';
-        _allergyOtherController.text = detail;
-      }
+    if (value.trim().isEmpty || value == 'None') {
+      _selectedAllergies.add('None');
+      return;
     }
+
+    _parseGroupValue(
+      value,
+      mainItems: _allergies,
+      selectedMain: _selectedAllergies,
+      detailResolver: _allergyDetailsForType,
+      selectedDetails: _selectedAllergyDetails,
+      subResolver: _allergySubDetailsFor,
+      selectedSub: _selectedAllergySubDetails,
+    );
   }
 
   void _parseCondition(String value) {
-    _selectedCondition = 'None';
-    _selectedConditionDetail = null;
-    _conditionOtherController.clear();
+    _selectedConditions.clear();
+    _selectedConditionDetails.clear();
+    _selectedConditionSubDetails.clear();
 
-    if (value.trim().isEmpty || value == 'None') return;
-
-    final parts = value.split(':');
-    final main = parts.first.trim();
-    final detail = parts.length > 1 ? parts.sublist(1).join(':').trim() : null;
-
-    _selectedCondition = _containsValue(_conditions, main) ? main : 'Other';
-
-    if (detail != null && detail.isNotEmpty) {
-      if (_containsValue(_conditionDetails, detail)) {
-        _selectedConditionDetail = detail;
-      } else {
-        _selectedConditionDetail = 'Other';
-        _conditionOtherController.text = detail;
-      }
+    if (value.trim().isEmpty || value == 'None') {
+      _selectedConditions.add('None');
+      return;
     }
+
+    _parseGroupValue(
+      value,
+      mainItems: _conditions,
+      selectedMain: _selectedConditions,
+      detailResolver: (_) => _conditionDetails,
+      selectedDetails: _selectedConditionDetails,
+      subResolver: _conditionSubDetailsFor,
+      selectedSub: _selectedConditionSubDetails,
+    );
   }
 
   void _parseMedication(String value) {
-    _selectedMedication = 'None';
-    _selectedMedicationDetail = null;
-    _medicationOtherController.clear();
+    _selectedMedications.clear();
+    _selectedMedicationDetails.clear();
+    _selectedMedicationSubDetails.clear();
 
-    if (value.trim().isEmpty || value == 'None') return;
+    if (value.trim().isEmpty || value == 'None') {
+      _selectedMedications.add('None');
+      return;
+    }
 
-    final parts = value.split(':');
-    final main = parts.first.trim();
-    final detail = parts.length > 1 ? parts.sublist(1).join(':').trim() : null;
+    _parseGroupValue(
+      value,
+      mainItems: _medications,
+      selectedMain: _selectedMedications,
+      detailResolver: (_) => _medicationDetails,
+      selectedDetails: _selectedMedicationDetails,
+      subResolver: _medicationSubDetailsFor,
+      selectedSub: _selectedMedicationSubDetails,
+    );
+  }
 
-    _selectedMedication = _containsValue(_medications, main) ? main : 'Other';
+  void _parseGroupValue(
+      String raw, {
+        required List<Map<String, String>> mainItems,
+        required Set<String> selectedMain,
+        required List<Map<String, String>> Function(String main) detailResolver,
+        required Set<String> selectedDetails,
+        required List<Map<String, String>> Function(String parent) subResolver,
+        required Map<String, Set<String>> selectedSub,
+      }) {
+    final normalized = raw.toLowerCase();
 
-    if (detail != null && detail.isNotEmpty) {
-      if (_containsValue(_medicationDetails, detail)) {
-        _selectedMedicationDetail = detail;
-      } else {
-        _selectedMedicationDetail = 'Other';
-        _medicationOtherController.text = detail;
+    for (final main in mainItems) {
+      final mainValue = main['en']!;
+      if (mainValue == 'None') continue;
+      if (normalized.contains(mainValue.toLowerCase())) {
+        selectedMain.add(mainValue);
+
+        for (final detail in detailResolver(mainValue)) {
+          final detailValue = detail['en']!;
+          if (normalized.contains(detailValue.toLowerCase())) {
+            selectedDetails.add(detailValue);
+
+            for (final sub in subResolver(detailValue)) {
+              final subValue = sub['en']!;
+              if (normalized.contains(subValue.toLowerCase())) {
+                selectedSub.putIfAbsent(detailValue, () => <String>{}).add(subValue);
+              }
+            }
+          }
+        }
       }
     }
+
+    if (selectedMain.isEmpty) selectedMain.add('None');
   }
 
-  List<Map<String, String>> _allergyDetailsList() {
-    if (_selectedAllergy == 'Food Allergy') return _foodAllergyDetails;
-    return _allergyOtherDetails;
+  List<Map<String, String>> _allergyDetailsForType(String type) {
+    if (type == 'Food Allergy') return _foodAllergyDetails;
+    if (type == 'Medication Allergy') return _medicationDetails;
+    if (type == 'Insect Allergy') return _allergyOtherDetails;
+    return const [];
   }
 
-  String _buildAllergyValue() {
-    if (_selectedAllergy == null || _selectedAllergy == 'None') return 'None';
-
-    final detail = _selectedAllergyDetail == 'Other'
-        ? _allergyOtherController.text.trim()
-        : (_selectedAllergyDetail ?? '');
-
-    return detail.isEmpty ? _selectedAllergy! : '${_selectedAllergy!}: $detail';
+  List<Map<String, String>> _allergySubDetailsFor(String parent) {
+    return _allergySubDetails[parent] ?? _medicationSubDetails[parent] ?? const [];
   }
 
-  String _buildConditionValue() {
-    if (_selectedCondition == null || _selectedCondition == 'None') {
-      return 'None';
-    }
-
-    final detail = _selectedConditionDetail == 'Other'
-        ? _conditionOtherController.text.trim()
-        : (_selectedConditionDetail ?? '');
-
-    return detail.isEmpty
-        ? _selectedCondition!
-        : '${_selectedCondition!}: $detail';
+  List<Map<String, String>> _conditionSubDetailsFor(String parent) {
+    return _conditionSubDetails[parent] ?? const [];
   }
 
-  String _buildMedicationValue() {
-    if (_selectedMedication == null || _selectedMedication == 'None') {
-      return 'None';
-    }
-
-    final detail = _selectedMedicationDetail == 'Other'
-        ? _medicationOtherController.text.trim()
-        : (_selectedMedicationDetail ?? '');
-
-    return detail.isEmpty
-        ? _selectedMedication!
-        : '${_selectedMedication!}: $detail';
+  List<Map<String, String>> _medicationSubDetailsFor(String parent) {
+    return _medicationSubDetails[parent] ?? const [];
   }
 
   Future<void> _pickImage() async {
@@ -344,36 +438,18 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       return;
     }
 
-    if (_selectedAllergy != 'None' && _selectedAllergyDetail == null) {
-      _showSnackbar(AppLanguage.text(context, 'Choose allergy details', 'اختر تفاصيل الحساسية'), isError: true);
+    if (_selectedAllergies.isEmpty) {
+      _showSnackbar(AppLanguage.text(context, 'Choose allergies', 'اختر الحساسية'), isError: true);
       return;
     }
 
-    if (_selectedAllergyDetail == 'Other' &&
-        _allergyOtherController.text.trim().isEmpty) {
-      _showSnackbar(AppLanguage.text(context, 'Write allergy details', 'اكتب تفاصيل الحساسية'), isError: true);
+    if (_selectedConditions.isEmpty) {
+      _showSnackbar(AppLanguage.text(context, 'Choose medical conditions', 'اختر الأمراض'), isError: true);
       return;
     }
 
-    if (_selectedCondition != 'None' && _selectedConditionDetail == null) {
-      _showSnackbar(AppLanguage.text(context, 'Choose condition details', 'اختر تفاصيل المرض'), isError: true);
-      return;
-    }
-
-    if (_selectedConditionDetail == 'Other' &&
-        _conditionOtherController.text.trim().isEmpty) {
-      _showSnackbar(AppLanguage.text(context, 'Write condition details', 'اكتب تفاصيل المرض'), isError: true);
-      return;
-    }
-
-    if (_selectedMedication != 'None' && _selectedMedicationDetail == null) {
-      _showSnackbar(AppLanguage.text(context, 'Choose medication details', 'اختر تفاصيل الدواء'), isError: true);
-      return;
-    }
-
-    if (_selectedMedicationDetail == 'Other' &&
-        _medicationOtherController.text.trim().isEmpty) {
-      _showSnackbar(AppLanguage.text(context, 'Write medication name', 'اكتب اسم الدواء'), isError: true);
+    if (_selectedMedications.isEmpty) {
+      _showSnackbar(AppLanguage.text(context, 'Choose medications', 'اختر الأدوية'), isError: true);
       return;
     }
 
@@ -403,6 +479,70 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     await _loadQuestionnaireData();
 
     _showSnackbar(AppLanguage.text(context, 'Profile updated successfully ✓', 'تم تحديث الملف الشخصي ✓'));
+  }
+
+  String _buildAllergyValue() {
+    return _buildGroupedValue(
+      mains: _selectedAllergies,
+      detailsByMain: _allergyDetailsForType,
+      selectedDetails: _selectedAllergyDetails,
+      subByDetail: _allergySubDetailsFor,
+      selectedSub: _selectedAllergySubDetails,
+    );
+  }
+
+  String _buildConditionValue() {
+    return _buildGroupedValue(
+      mains: _selectedConditions,
+      detailsByMain: (_) => _conditionDetails,
+      selectedDetails: _selectedConditionDetails,
+      subByDetail: _conditionSubDetailsFor,
+      selectedSub: _selectedConditionSubDetails,
+    );
+  }
+
+  String _buildMedicationValue() {
+    return _buildGroupedValue(
+      mains: _selectedMedications,
+      detailsByMain: (_) => _medicationDetails,
+      selectedDetails: _selectedMedicationDetails,
+      subByDetail: _medicationSubDetailsFor,
+      selectedSub: _selectedMedicationSubDetails,
+    );
+  }
+
+  String _buildGroupedValue({
+    required Set<String> mains,
+    required List<Map<String, String>> Function(String main) detailsByMain,
+    required Set<String> selectedDetails,
+    required List<Map<String, String>> Function(String detail) subByDetail,
+    required Map<String, Set<String>> selectedSub,
+  }) {
+    if (mains.isEmpty || mains.contains('None')) return 'None';
+
+    final result = <String>[];
+
+    for (final main in mains) {
+      if (main == 'None') continue;
+
+      final allowedDetails = detailsByMain(main).map((e) => e['en']!).toSet();
+      final detailsForMain = selectedDetails.where(allowedDetails.contains).toList();
+
+      if (detailsForMain.isEmpty) {
+        result.add(main);
+        continue;
+      }
+
+      final detailTexts = <String>[];
+      for (final detail in detailsForMain) {
+        final subs = selectedSub[detail] ?? <String>{};
+        detailTexts.add(subs.isEmpty ? detail : '$detail (${subs.join(', ')})');
+      }
+
+      result.add('$main: ${detailTexts.join(', ')}');
+    }
+
+    return result.join(' | ');
   }
 
   void _showSnackbar(String msg, {bool isError = false}) {
@@ -437,6 +577,10 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   String get _conditionDisplay => _buildConditionValue();
   String get _medicationDisplay => _buildMedicationValue();
 
+  String _label(Map<String, String> item) {
+    return AppLanguage.isArabicContext(context) ? item['ar']! : item['en']!;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isArabic = AppLanguage.isArabicContext(context);
@@ -448,12 +592,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         appBar: AppBar(
           title: Text(
             AppLanguage.text(context, 'Profile', 'الملف الشخصي'),
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           backgroundColor: primary,
           centerTitle: true,
           elevation: 0,
-          iconTheme: IconThemeData(color: Colors.white),
+          iconTheme: const IconThemeData(color: Colors.white),
           actions: [
             TextButton.icon(
               onPressed: _isSaving
@@ -474,10 +618,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 _isEditing
                     ? AppLanguage.text(context, 'Save', 'حفظ')
                     : AppLanguage.text(context, 'Edit', 'تعديل'),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -490,11 +631,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             children: [
               _buildProfileHeader(),
               const SizedBox(height: 22),
-              if (_isEditing) ...[
-                _buildEditCard(),
-              ] else ...[
-                _buildQuestionnaireCard(),
-              ],
+              if (_isEditing) _buildEditCard() else _buildQuestionnaireCard(),
               const SizedBox(height: 20),
             ],
           ),
@@ -518,15 +655,10 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 CircleAvatar(
                   radius: 56,
                   backgroundColor: const Color(0xFFDBEAFE),
-                  backgroundImage:
-                  _validImageFile() ? FileImage(File(_imagePath!)) : null,
+                  backgroundImage: _validImageFile() ? FileImage(File(_imagePath!)) : null,
                   child: _validImageFile()
                       ? null
-                      : Icon(
-                    Icons.person_rounded,
-                    size: 62,
-                    color: primary,
-                  ),
+                      : Icon(Icons.person_rounded, size: 62, color: primary),
                 ),
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -548,21 +680,13 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           Text(
             _profileName,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: textDark,
-              fontSize: 23,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(color: textDark, fontSize: 23, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
           Text(
             _email,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: textMuted,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(color: textMuted, fontSize: 13, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -577,15 +701,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            AppLanguage.text(context, 'Edit Questionnaire Data', 'تعديل بيانات الاستبيان'),
-            style: TextStyle(
-              color: primary,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
+          _editHeader(),
+          const SizedBox(height: 18),
           _buildTextField(
             label: AppLanguage.text(context, 'Full Name', 'الاسم الكامل'),
             controller: _nameController,
@@ -597,110 +714,30 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             icon: Icons.cake_rounded,
             keyboardType: TextInputType.number,
           ),
-          _buildSexSelector(),
-          _buildDropdown(
-            label: AppLanguage.text(context, 'Blood Type', 'فصيلة الدم'),
-            value: _selectedBloodType,
-            items: _bloodTypes,
+          _editSection(
+            title: AppLanguage.text(context, 'Sex', 'الجنس'),
+            icon: Icons.wc_rounded,
+            child: _singleRectGrid(
+              value: _selectedSex,
+              items: _sexItems,
+              icon: Icons.wc_rounded,
+              onSelected: (v) => setState(() => _selectedSex = v),
+            ),
+          ),
+          _editSection(
+            title: AppLanguage.text(context, 'Blood Type', 'فصيلة الدم'),
             icon: Icons.bloodtype_rounded,
-            onChanged: (v) => setState(() => _selectedBloodType = v),
+            child: _singleRectGrid(
+              value: _selectedBloodType,
+              items: _bloodTypes,
+              icon: Icons.bloodtype_rounded,
+              compact: true,
+              onSelected: (v) => setState(() => _selectedBloodType = v),
+            ),
           ),
-          _buildDropdown(
-            label: AppLanguage.text(context, 'Allergies', 'الحساسية'),
-            value: _selectedAllergy,
-            items: _allergies,
-            icon: Icons.warning_amber_rounded,
-            onChanged: (v) {
-              setState(() {
-                _selectedAllergy = v;
-                _selectedAllergyDetail = null;
-                _allergyOtherController.clear();
-              });
-            },
-          ),
-          if (_selectedAllergy != null && _selectedAllergy != 'None')
-            _buildDropdown(
-              label: AppLanguage.text(context, 'Allergy Details', 'تفاصيل الحساسية'),
-              value: _selectedAllergyDetail,
-              items: _allergyDetailsList(),
-              icon: Icons.restaurant_rounded,
-              onChanged: (v) {
-                setState(() {
-                  _selectedAllergyDetail = v;
-                  _allergyOtherController.clear();
-                });
-              },
-            ),
-          if (_selectedAllergyDetail == 'Other')
-            _buildTextField(
-              label: AppLanguage.text(context, 'Write allergy or food name', 'اكتب الحساسية أو اسم الطعام'),
-              controller: _allergyOtherController,
-              icon: Icons.edit_note_rounded,
-            ),
-          _buildDropdown(
-            label: AppLanguage.text(context, 'Medical Conditions', 'الأمراض'),
-            value: _selectedCondition,
-            items: _conditions,
-            icon: Icons.medical_services_rounded,
-            onChanged: (v) {
-              setState(() {
-                _selectedCondition = v;
-                _selectedConditionDetail = null;
-                _conditionOtherController.clear();
-              });
-            },
-          ),
-          if (_selectedCondition != null && _selectedCondition != 'None')
-            _buildDropdown(
-              label: AppLanguage.text(context, 'Condition Details', 'تفاصيل المرض'),
-              value: _selectedConditionDetail,
-              items: _conditionDetails,
-              icon: Icons.monitor_heart_rounded,
-              onChanged: (v) {
-                setState(() {
-                  _selectedConditionDetail = v;
-                  _conditionOtherController.clear();
-                });
-              },
-            ),
-          if (_selectedConditionDetail == 'Other')
-            _buildTextField(
-              label: AppLanguage.text(context, 'Write condition details', 'اكتب تفاصيل المرض'),
-              controller: _conditionOtherController,
-              icon: Icons.edit_note_rounded,
-            ),
-          _buildDropdown(
-            label: AppLanguage.text(context, 'Medications', 'الأدوية'),
-            value: _selectedMedication,
-            items: _medications,
-            icon: Icons.medication_rounded,
-            onChanged: (v) {
-              setState(() {
-                _selectedMedication = v;
-                _selectedMedicationDetail = null;
-                _medicationOtherController.clear();
-              });
-            },
-          ),
-          if (_selectedMedication != null && _selectedMedication != 'None')
-            _buildDropdown(
-              label: AppLanguage.text(context, 'Medication Details', 'تفاصيل الدواء'),
-              value: _selectedMedicationDetail,
-              items: _medicationDetails,
-              icon: Icons.local_pharmacy_rounded,
-              onChanged: (v) {
-                setState(() {
-                  _selectedMedicationDetail = v;
-                  _medicationOtherController.clear();
-                });
-              },
-            ),
-          if (_selectedMedicationDetail == 'Other')
-            _buildTextField(
-              label: AppLanguage.text(context, 'Write medication name', 'اكتب اسم الدواء'),
-              controller: _medicationOtherController,
-              icon: Icons.edit_note_rounded,
-            ),
+          _allergyEditSection(),
+          _conditionEditSection(),
+          _medicationEditSection(),
           _buildTextField(
             label: AppLanguage.text(context, 'Notes', 'ملاحظات'),
             controller: _notesController,
@@ -714,32 +751,487 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
               ),
               onPressed: _isSaving ? null : _saveProfile,
               icon: _isSaving
-                  ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-                  : Icon(Icons.save_rounded, color: Colors.white),
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Icon(Icons.save_rounded, color: Colors.white),
               label: Text(
-                _isSaving ? AppLanguage.text(context, 'Saving...', 'جاري الحفظ...') : AppLanguage.text(context, 'Save Changes', 'حفظ التغييرات'),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                _isSaving
+                    ? AppLanguage.text(context, 'Saving...', 'جاري الحفظ...')
+                    : AppLanguage.text(context, 'Save Changes', 'حفظ التغييرات'),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _editHeader() {
+    return Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: primary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(Icons.edit_note_rounded, color: primary),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            AppLanguage.text(context, 'Edit Questionnaire Data', 'تعديل بيانات الاستبيان'),
+            style: TextStyle(color: primary, fontSize: 19, fontWeight: FontWeight.w900),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _allergyEditSection() {
+    final activeTypes = _selectedAllergies.where((e) => e != 'None').toList();
+
+    return Column(
+      children: [
+        _editSection(
+          title: AppLanguage.text(context, 'Allergies', 'الحساسية'),
+          icon: Icons.warning_amber_rounded,
+          child: _multiRectGrid(
+            selectedValues: _selectedAllergies,
+            items: _allergies,
+            icon: Icons.warning_amber_rounded,
+            onToggle: (v) {
+              setState(() {
+                if (v == 'None') {
+                  _selectedAllergies
+                    ..clear()
+                    ..add('None');
+                  _selectedAllergyDetails.clear();
+                  _selectedAllergySubDetails.clear();
+                  return;
+                }
+
+                _selectedAllergies.remove('None');
+
+                if (_selectedAllergies.contains(v)) {
+                  _selectedAllergies.remove(v);
+                  _removeDetailsForMain(v, _allergyDetailsForType, _selectedAllergyDetails, _selectedAllergySubDetails);
+                } else {
+                  _selectedAllergies.add(v);
+                }
+              });
+            },
+          ),
+        ),
+        for (final type in activeTypes) ...[
+          _editSection(
+            title: _titleForAllergyType(type),
+            icon: type == 'Food Allergy'
+                ? Icons.restaurant_rounded
+                : type == 'Medication Allergy'
+                ? Icons.local_pharmacy_rounded
+                : Icons.bug_report_rounded,
+            child: _multiRectGrid(
+              selectedValues: _selectedAllergyDetails,
+              items: _allergyDetailsForType(type),
+              icon: Icons.checklist_rounded,
+              compact: true,
+              onToggle: (v) {
+                setState(() {
+                  if (_selectedAllergyDetails.contains(v)) {
+                    _selectedAllergyDetails.remove(v);
+                    _selectedAllergySubDetails.remove(v);
+                  } else {
+                    _selectedAllergyDetails.add(v);
+                  }
+                });
+              },
+            ),
+          ),
+          for (final detail in _selectedDetailsForType(type, _allergyDetailsForType, _selectedAllergyDetails))
+            if (_allergySubDetailsFor(detail).isNotEmpty)
+              _editSection(
+                title: AppLanguage.text(context, '$detail details', 'تفاصيل $detail'),
+                icon: Icons.menu_open_rounded,
+                child: _multiRectGrid(
+                  selectedValues: _selectedAllergySubDetails[detail] ?? <String>{},
+                  items: _allergySubDetailsFor(detail),
+                  icon: Icons.subdirectory_arrow_right_rounded,
+                  compact: true,
+                  onToggle: (v) {
+                    setState(() {
+                      final set = _selectedAllergySubDetails.putIfAbsent(detail, () => <String>{});
+                      set.contains(v) ? set.remove(v) : set.add(v);
+                      if (set.isEmpty) _selectedAllergySubDetails.remove(detail);
+                    });
+                  },
+                ),
+              ),
+        ],
+      ],
+    );
+  }
+
+  Widget _conditionEditSection() {
+    final activeConditions = _selectedConditions.where((e) => e != 'None').toList();
+
+    return Column(
+      children: [
+        _editSection(
+          title: AppLanguage.text(context, 'Medical Conditions', 'الأمراض'),
+          icon: Icons.medical_services_rounded,
+          child: _multiRectGrid(
+            selectedValues: _selectedConditions,
+            items: _conditions,
+            icon: Icons.medical_services_rounded,
+            onToggle: (v) {
+              setState(() {
+                if (v == 'None') {
+                  _selectedConditions
+                    ..clear()
+                    ..add('None');
+                  _selectedConditionDetails.clear();
+                  _selectedConditionSubDetails.clear();
+                  return;
+                }
+
+                _selectedConditions.remove('None');
+
+                if (_selectedConditions.contains(v)) {
+                  _selectedConditions.remove(v);
+                  _removeDetailsForMain(v, (_) => _conditionDetails, _selectedConditionDetails, _selectedConditionSubDetails);
+                } else {
+                  _selectedConditions.add(v);
+                }
+              });
+            },
+          ),
+        ),
+        for (final condition in activeConditions) ...[
+          _editSection(
+            title: AppLanguage.text(context, '$condition level', 'تفاصيل $condition'),
+            icon: Icons.monitor_heart_rounded,
+            child: _multiRectGrid(
+              selectedValues: _selectedConditionDetails,
+              items: _conditionDetails,
+              icon: Icons.monitor_heart_rounded,
+              compact: true,
+              onToggle: (v) {
+                setState(() {
+                  _selectedConditionDetails.contains(v)
+                      ? _selectedConditionDetails.remove(v)
+                      : _selectedConditionDetails.add(v);
+                });
+              },
+            ),
+          ),
+          if (_conditionSubDetailsFor(condition).isNotEmpty)
+            _editSection(
+              title: AppLanguage.text(context, '$condition details', 'تفاصيل $condition'),
+              icon: Icons.menu_open_rounded,
+              child: _multiRectGrid(
+                selectedValues: _selectedConditionSubDetails[condition] ?? <String>{},
+                items: _conditionSubDetailsFor(condition),
+                icon: Icons.subdirectory_arrow_right_rounded,
+                compact: true,
+                onToggle: (v) {
+                  setState(() {
+                    final set = _selectedConditionSubDetails.putIfAbsent(condition, () => <String>{});
+                    set.contains(v) ? set.remove(v) : set.add(v);
+                    if (set.isEmpty) _selectedConditionSubDetails.remove(condition);
+                  });
+                },
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  Widget _medicationEditSection() {
+    final activeMedications = _selectedMedications.where((e) => e != 'None').toList();
+
+    return Column(
+      children: [
+        _editSection(
+          title: AppLanguage.text(context, 'Medications', 'الأدوية'),
+          icon: Icons.medication_rounded,
+          child: _multiRectGrid(
+            selectedValues: _selectedMedications,
+            items: _medications,
+            icon: Icons.medication_rounded,
+            onToggle: (v) {
+              setState(() {
+                if (v == 'None') {
+                  _selectedMedications
+                    ..clear()
+                    ..add('None');
+                  _selectedMedicationDetails.clear();
+                  _selectedMedicationSubDetails.clear();
+                  return;
+                }
+
+                _selectedMedications.remove('None');
+
+                if (_selectedMedications.contains(v)) {
+                  _selectedMedications.remove(v);
+                  _removeDetailsForMain(v, (_) => _medicationDetails, _selectedMedicationDetails, _selectedMedicationSubDetails);
+                } else {
+                  _selectedMedications.add(v);
+                }
+              });
+            },
+          ),
+        ),
+        for (final medicationType in activeMedications) ...[
+          _editSection(
+            title: AppLanguage.text(context, '$medicationType names', 'أسماء $medicationType'),
+            icon: Icons.local_pharmacy_rounded,
+            child: _multiRectGrid(
+              selectedValues: _selectedMedicationDetails,
+              items: _medicationDetails,
+              icon: Icons.local_pharmacy_rounded,
+              compact: true,
+              onToggle: (v) {
+                setState(() {
+                  if (_selectedMedicationDetails.contains(v)) {
+                    _selectedMedicationDetails.remove(v);
+                    _selectedMedicationSubDetails.remove(v);
+                  } else {
+                    _selectedMedicationDetails.add(v);
+                  }
+                });
+              },
+            ),
+          ),
+          for (final detail in _selectedMedicationDetails)
+            if (_medicationSubDetailsFor(detail).isNotEmpty)
+              _editSection(
+                title: AppLanguage.text(context, '$detail details', 'تفاصيل $detail'),
+                icon: Icons.menu_open_rounded,
+                child: _multiRectGrid(
+                  selectedValues: _selectedMedicationSubDetails[detail] ?? <String>{},
+                  items: _medicationSubDetailsFor(detail),
+                  icon: Icons.subdirectory_arrow_right_rounded,
+                  compact: true,
+                  onToggle: (v) {
+                    setState(() {
+                      final set = _selectedMedicationSubDetails.putIfAbsent(detail, () => <String>{});
+                      set.contains(v) ? set.remove(v) : set.add(v);
+                      if (set.isEmpty) _selectedMedicationSubDetails.remove(detail);
+                    });
+                  },
+                ),
+              ),
+        ],
+      ],
+    );
+  }
+
+  String _titleForAllergyType(String type) {
+    if (type == 'Food Allergy') {
+      return AppLanguage.text(context, 'Food allergy items', 'اختيارات حساسية الطعام');
+    }
+    if (type == 'Medication Allergy') {
+      return AppLanguage.text(context, 'Medication allergy items', 'اختيارات حساسية الأدوية');
+    }
+    return AppLanguage.text(context, 'Insect allergy items', 'اختيارات حساسية الحشرات');
+  }
+
+  List<String> _selectedDetailsForType(
+      String main,
+      List<Map<String, String>> Function(String main) resolver,
+      Set<String> selectedDetails,
+      ) {
+    final allowed = resolver(main).map((e) => e['en']!).toSet();
+    return selectedDetails.where(allowed.contains).toList();
+  }
+
+  void _removeDetailsForMain(
+      String main,
+      List<Map<String, String>> Function(String main) resolver,
+      Set<String> selectedDetails,
+      Map<String, Set<String>> selectedSub,
+      ) {
+    final details = resolver(main).map((e) => e['en']!).toSet();
+    for (final detail in details) {
+      selectedDetails.remove(detail);
+      selectedSub.remove(detail);
+    }
+  }
+
+  Widget _editSection({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: primary.withValues(alpha: 0.16)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.035),
+            blurRadius: 14,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: primary.withValues(alpha: 0.10),
+                child: Icon(icon, color: primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(color: primary, fontSize: 16.5, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _singleRectGrid({
+    required String? value,
+    required List<Map<String, String>> items,
+    required IconData icon,
+    required ValueChanged<String> onSelected,
+    bool compact = false,
+  }) {
+    return _rectChoiceGrid(
+      selectedValues: value == null ? <String>{} : <String>{value},
+      items: items,
+      icon: icon,
+      compact: compact,
+      onTap: onSelected,
+    );
+  }
+
+  Widget _multiRectGrid({
+    required Set<String> selectedValues,
+    required List<Map<String, String>> items,
+    required IconData icon,
+    required ValueChanged<String> onToggle,
+    bool compact = false,
+  }) {
+    return _rectChoiceGrid(
+      selectedValues: selectedValues,
+      items: items,
+      icon: icon,
+      compact: compact,
+      onTap: onToggle,
+    );
+  }
+
+  Widget _rectChoiceGrid({
+    required Set<String> selectedValues,
+    required List<Map<String, String>> items,
+    required IconData icon,
+    required ValueChanged<String> onTap,
+    bool compact = false,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 10.0;
+        final itemWidth = compact
+            ? ((constraints.maxWidth - gap) / 2).clamp(128.0, 170.0)
+            : ((constraints.maxWidth - gap) / 2).clamp(145.0, 195.0);
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: items.map((item) {
+            final value = item['en']!;
+            final selected = selectedValues.contains(value);
+            return SizedBox(
+              width: itemWidth,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () => onTap(value),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  constraints: BoxConstraints(minHeight: compact ? 54 : 64),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 10 : 12,
+                    vertical: compact ? 9 : 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected ? primary : background,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: selected ? primary : const Color(0xFFDDE7F3),
+                      width: 1.3,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: selected
+                            ? primary.withValues(alpha: 0.20)
+                            : Colors.black.withValues(alpha: 0.025),
+                        blurRadius: selected ? 12 : 7,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: compact ? 28 : 32,
+                        height: compact ? 28 : 32,
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? Colors.white.withValues(alpha: 0.20)
+                              : primary.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          selected ? Icons.check_rounded : icon,
+                          color: selected ? Colors.white : primary,
+                          size: compact ? 17 : 19,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _label(item),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: selected ? Colors.white : textDark,
+                            fontWeight: FontWeight.w800,
+                            fontSize: compact ? 11 : 12.5,
+                            height: 1.1,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
@@ -754,15 +1246,11 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           Row(
             children: [
               Icon(Icons.assignment_rounded, color: primary),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   AppLanguage.text(context, 'Questionnaire Data', 'بيانات الاستبيان'),
-                  style: TextStyle(
-                    color: primary,
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(color: primary, fontSize: 19, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -800,7 +1288,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           ),
           _infoRow(
             icon: Icons.medical_services_rounded,
-            title: 'Conditions',
+            title: AppLanguage.text(context, 'Conditions', 'الأمراض'),
             value: _clean(_conditionDisplay),
           ),
           _infoRow(
@@ -842,20 +1330,13 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             width: 95,
             child: Text(
               title,
-              style: TextStyle(
-                color: textMuted,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(color: textMuted, fontWeight: FontWeight.w600),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
-                color: textDark,
-                fontWeight: FontWeight.bold,
-                height: 1.4,
-              ),
+              style: const TextStyle(color: textDark, fontWeight: FontWeight.bold, height: 1.4),
             ),
           ),
         ],
@@ -876,92 +1357,23 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
+        cursorColor: primary,
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: TextStyle(color: primary.withValues(alpha: 0.75), fontWeight: FontWeight.w700),
           prefixIcon: Icon(icon, color: primary),
           filled: true,
           fillColor: background,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(color: primary.withValues(alpha: 0.14)),
           ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(color: primary, width: 1.6),
+          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDropdown({
-    required String label,
-    required String? value,
-    required List<Map<String, String>> items,
-    required IconData icon,
-    required Function(String?) onChanged,
-  }) {
-    final safeValue = value != null && _containsValue(items, value)
-        ? value
-        : null;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: DropdownButtonFormField<String>(
-        value: safeValue,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: primary),
-          filled: true,
-          fillColor: background,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        items: items.map((item) {
-          final en = item['en']!;
-          return DropdownMenuItem<String>(
-            value: en,
-            child: Text(
-              AppLanguage.isArabicContext(context)
-                  ? (item['ar'] ?? en)
-                  : en,
-            ),
-          );
-        }).toList(),
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  Widget _buildSexSelector() {
-    const allowedValues = ['Male', 'Female'];
-    final safeValue = allowedValues.contains(_selectedSex)
-        ? _selectedSex
-        : 'Male';
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: DropdownButtonFormField<String>(
-        value: safeValue,
-        decoration: InputDecoration(
-          labelText: AppLanguage.text(context, 'Sex', 'الجنس'),
-          prefixIcon: Icon(Icons.wc_rounded, color: primary),
-          filled: true,
-          fillColor: background,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        items: [
-          DropdownMenuItem(
-            value: 'Male',
-            child: Text(AppLanguage.text(context, 'Male', 'ذكر')),
-          ),
-          DropdownMenuItem(
-            value: 'Female',
-            child: Text(AppLanguage.text(context, 'Female', 'أنثى')),
-          ),
-        ],
-        onChanged: (value) {
-          if (value == null) return;
-          setState(() => _selectedSex = value);
-        },
       ),
     );
   }
@@ -969,7 +1381,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(22),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(alpha: 0.05),
