@@ -488,6 +488,20 @@ class AppDatabase {
     return result.isEmpty ? null : result.first;
   }
 
+  // --- إضافة دالة البحث بالهاتف هنا داخل الكلاس ---
+  Future<Map<String, dynamic>?> getUserByPhone(String phone) async {
+    final db = await database;
+
+    final result = await db.query(
+      Tables.users,
+      where: 'phone = ?',
+      whereArgs: [phone.trim()],
+      limit: 1,
+    );
+
+    return result.isEmpty ? null : result.first;
+  }
+
   Future<Map<String, dynamic>?> loginUser({
     required String email,
     required String password,
@@ -817,8 +831,9 @@ class AppDatabase {
     );
   }
 
+  // --- تحديث دالة تغيير كلمة المرور لتعمل برقم الهاتف ---
   Future<int> updateUserPassword({
-    required String email,
+    required String phone,
     required String newPassword,
   }) async {
     final db = await database;
@@ -829,8 +844,8 @@ class AppDatabase {
         'password': newPassword,
         'pending_sync': 1,
       },
-      where: 'email = ?',
-      whereArgs: [email.trim().toLowerCase()],
+      where: 'phone = ?',
+      whereArgs: [phone.trim()],
     );
   }
 

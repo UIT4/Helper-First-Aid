@@ -131,9 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openScreen(
-      Widget screen, {
-        bool requireLogin = false,
-      }) {
+    Widget screen, {
+    bool requireLogin = false,
+  }) {
     HapticFeedback.selectionClick();
 
     if (_isGuest && requireLogin) {
@@ -168,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Login Required',
                 'تسجيل الدخول مطلوب',
               ),
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -179,53 +179,89 @@ class _HomeScreenState extends State<HomeScreen> {
                 'أنت تستخدم وضع الضيف. سجّل الدخول أو أنشئ حسابًا للوصول إلى هذه الصفحة.',
               ),
             ),
+            actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: primary,
+                        side: BorderSide(color: primary.withValues(alpha: 0.5), width: 1.2),
+                        padding: EdgeInsets.zero, // تصفير البادينج للاعتماد على حجم الـ SizedBox
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
 
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LoginScreen(),
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LoginScreen(),
+                          ),
+                        );
+                      },
+                      child: SizedBox(
+                        height: 48, // تحديد الارتفاع الصافي للزر
+                        child: Center(
+                          child: Text(
+                            AppLanguage.text(
+                              context,
+                              'Log in',
+                              'تسجيل الدخول',
+                            ),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  );
-                },
-                child: Text(
-                  AppLanguage.text(
-                    context,
-                    'Log in',
-                    'تسجيل الدخول',
                   ),
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primary,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.zero, // تصفير البادينج للاعتماد على حجم الـ SizedBox
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
 
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SignupScreen(),
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SignupScreen(),
+                          ),
+                        );
+                      },
+                      child: SizedBox(
+                        height: 48, // نفس الارتفاع الصافي تماماً للزر الثاني
+                        child: Center(
+                          child: Text(
+                            AppLanguage.text(
+                              context,
+                              'Sign up',
+                              'إنشاء حساب',
+                            ),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  );
-                },
-                child: Text(
-                  AppLanguage.text(
-                    context,
-                    'Sign up',
-                    'إنشاء حساب',
                   ),
-                  style: TextStyle(
-                    color: Colors.white,
-                  ),
-                ),
+                ],
               ),
             ],
           ),
@@ -264,7 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Rescue Assistant',
               'مساعد الإسعاف',
             ),
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -272,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: primary,
           centerTitle: true,
           elevation: 0,
-          iconTheme: IconThemeData(color: Colors.white),
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
         drawer: _buildDrawer(),
         body: RefreshIndicator(
@@ -314,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 34),
       decoration: BoxDecoration(
         color: primary,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(34),
           bottomRight: Radius.circular(34),
         ),
@@ -327,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.white.withValues(alpha: 0.16),
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: const Icon(
               Icons.health_and_safety,
               size: 58,
               color: Colors.white,
@@ -340,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Emergency?',
               'حالة طارئة؟',
             ),
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -354,7 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'صف الحالة واحصل على إرشادات إسعاف أولي فورية',
             ),
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 15,
               height: 1.5,
@@ -386,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.warning_amber_rounded,
                       color: Colors.white,
                       size: 28,
@@ -398,7 +434,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'I NEED HELP',
                         'أحتاج مساعدة',
                       ),
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -447,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: danger.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.call,
                 color: danger,
                 size: 28,
@@ -464,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Call Emergency',
                       'اتصال طوارئ',
                     ),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: textDark,
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
@@ -477,7 +513,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Tap to call $_emergencyNumber immediately',
                       'اضغط للاتصال فوراً بـ $_emergencyNumber',
                     ),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: textMuted,
                       fontSize: 13,
                     ),
@@ -485,7 +521,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            Icon(
+            const Icon(
               Icons.arrow_forward_ios_rounded,
               size: 18,
               color: Color(0xFF94A3B8),
@@ -517,16 +553,16 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(
               _isCheckingUpdates
                   ? AppLanguage.text(
-                context,
-                'Checking content updates...',
-                'جارٍ فحص تحديثات المحتوى...',
-              )
+                      context,
+                      'Checking content updates...',
+                      'جارٍ فحص تحديثات المحتوى...',
+                    )
                   : AppLanguage.text(
-                context,
-                'Offline guidance is ready. Updates will sync when server is available.',
-                'الإرشادات غير المتصلة جاهزة وسيتم مزامنة التحديثات عند توفر الخادم.',
-              ),
-              style: TextStyle(
+                      context,
+                      'Offline guidance is ready. Updates will sync when server is available.',
+                      'الإرشادات غير المتصلة جاهزة وسيتم مزامنة التحديثات عند توفر الخادم.',
+                    ),
+              style: const TextStyle(
                 color: Color(0xFF1E3A8A),
                 fontSize: 13,
                 height: 1.4,
@@ -550,7 +586,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
+          const Icon(
             Icons.warning_amber_rounded,
             color: Color(0xFFF97316),
           ),
@@ -562,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 'This app provides first-aid guidance only. It is not a medical diagnosis tool. In serious emergencies, call emergency services immediately.',
                 'هذا التطبيق يقدم إرشادات إسعاف أولي فقط وليس أداة تشخيص طبي. في الحالات الخطيرة، اتصل بخدمات الطوارئ فوراً.',
               ),
-              style: TextStyle(
+              style: const TextStyle(
                 color: Color(0xFF7C2D12),
                 fontSize: 13,
                 height: 1.5,
@@ -699,14 +735,14 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: primary,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           bottomRight: Radius.circular(28),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
+          const Icon(
             Icons.health_and_safety,
             color: Colors.white,
             size: 46,
@@ -718,7 +754,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Rescue Assistant',
               'مساعد الإسعاف',
             ),
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 21,
               fontWeight: FontWeight.bold,
@@ -731,7 +767,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Emergency guidance app',
               'تطبيق إرشادات الطوارئ',
             ),
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 13,
             ),

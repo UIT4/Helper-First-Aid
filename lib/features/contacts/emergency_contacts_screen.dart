@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; 
 import '../../core/constants/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -72,7 +73,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
           ),
           title: Text(
             AppLanguage.text(context, 'Delete Contact', 'حذف جهة الاتصال'),
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           content: Text(
             AppLanguage.text(
@@ -81,26 +82,56 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
               'هل أنت متأكد أنك تريد حذف "$name"؟',
             ),
           ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                AppLanguage.text(context, 'Cancel', 'إلغاء'),
-                style: TextStyle(color: textMuted),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: danger,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF1F5F9), // لون رمادي فاتح متناسق مع الخلفية والنص
+                      foregroundColor: textMuted,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: Color(0xFFCBD5E1)), // حدود خفيفة لتحديد الزر
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(
+                      AppLanguage.text(context, 'Cancel', 'إلغاء'),
+                      style: TextStyle(
+                        color: textMuted,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                AppLanguage.text(context, 'Delete', 'حذف'),
-                style: TextStyle(color: Colors.white),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: danger,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(
+                      AppLanguage.text(context, 'Delete', 'حذف'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -192,7 +223,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
               'Emergency Contacts',
               'جهات اتصال الطوارئ',
             ),
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -200,7 +231,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
           backgroundColor: danger,
           centerTitle: true,
           elevation: 0,
-          iconTheme: IconThemeData(color: Colors.white),
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
         body:
         _isLoading
@@ -211,10 +242,10 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         floatingActionButton: FloatingActionButton.extended(
           backgroundColor: primary,
           onPressed: () => _showContactDialog(),
-          icon: Icon(Icons.person_add, color: Colors.white),
+          icon: const Icon(Icons.person_add, color: Colors.white),
           label: Text(
             AppLanguage.text(context, 'Add Contact', 'إضافة جهة'),
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
@@ -233,7 +264,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Color(0xFFDBEAFE),
                 shape: BoxShape.circle,
               ),
@@ -247,7 +278,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                 'لا توجد جهات طوارئ',
               ),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: textDark,
@@ -261,7 +292,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                 'أضف جهات اتصال لإشعارهم في حالات الطوارئ',
               ),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: textMuted),
+              style: const TextStyle(fontSize: 14, color: textMuted),
             ),
           ],
         ),
@@ -337,7 +368,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                 color: primary,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.star, size: 10, color: Colors.white),
+              child: const Icon(Icons.star, size: 10, color: Colors.white),
             ),
           ),
       ],
@@ -354,7 +385,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
               Expanded(
                 child: Text(
                   contact['name']?.toString() ?? 'Unknown',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: textDark,
@@ -375,7 +406,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                   ),
                   child: Text(
                     AppLanguage.text(context, 'PRIMARY', 'أساسي'),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -388,12 +419,12 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
           const SizedBox(height: 4),
           Text(
             contact['phone']?.toString() ?? '',
-            style: TextStyle(fontSize: 14, color: textMuted),
+            style: const TextStyle(fontSize: 14, color: textMuted),
           ),
           if ((contact['relation']?.toString() ?? '').isNotEmpty)
             Text(
               contact['relation'].toString(),
-              style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
             ),
         ],
       ),
@@ -404,12 +435,12 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
     return Column(
       children: [
         IconButton(
-          icon: Icon(Icons.call, color: success, size: 26),
+          icon: const Icon(Icons.call, color: success, size: 26),
           onPressed: () => _makeCall(contact['phone']?.toString() ?? ''),
           tooltip: AppLanguage.text(context, 'Call', 'اتصال'),
         ),
         PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert, color: textMuted),
+          icon: const Icon(Icons.more_vert, color: textMuted),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -477,48 +508,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
       ],
     );
   }
-
-  Widget _dialogField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType type = TextInputType.text,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: type,
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: primary, size: 20),
-        filled: true,
-        fillColor: background,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: danger),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
-      ),
-    );
-  }
 }
-
 
 class _ContactFormPage extends StatefulWidget {
   final Map<String, dynamic>? existing;
@@ -557,6 +547,7 @@ class _ContactFormPageState extends State<_ContactFormPage> {
     _relationCtrl = TextEditingController(
       text: widget.existing?['relation']?.toString() ?? '',
     );
+    
     _isPrimary = (widget.existing?['is_primary'] ?? 0) == 1;
   }
 
@@ -625,13 +616,13 @@ class _ContactFormPageState extends State<_ContactFormPage> {
             _isEdit
                 ? AppLanguage.text(context, 'Edit Contact', 'تعديل جهة الاتصال')
                 : AppLanguage.text(context, 'Add Contact', 'إضافة جهة اتصال'),
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
           ),
           backgroundColor: danger,
-          iconTheme: IconThemeData(color: Colors.white),
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -658,9 +649,20 @@ class _ContactFormPageState extends State<_ContactFormPage> {
                     label: AppLanguage.text(context, 'Phone Number', 'رقم الهاتف'),
                     icon: Icons.phone,
                     type: TextInputType.phone,
+                    maxLength: 10,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                    ],
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
                         return AppLanguage.text(context, 'Phone is required', 'رقم الهاتف مطلوب');
+                      }
+                      if (v.trim().length != 10) {
+                        return AppLanguage.text(
+                          context,
+                          'Phone number must be exactly 10 digits',
+                          'يجب أن يتكون رقم الهاتف من 10 أرقام تماماً',
+                        );
                       }
                       return null;
                     },
@@ -683,14 +685,14 @@ class _ContactFormPageState extends State<_ContactFormPage> {
                       onChanged: (v) => setState(() => _isPrimary = v),
                       title: Text(
                         AppLanguage.text(context, 'Set as Primary Contact', 'تعيين كجهة أساسية'),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: textDark,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       subtitle: Text(
                         AppLanguage.text(context, 'Will be first to receive SMS', 'سيكون أول من تصله رسالة الطوارئ'),
-                        style: TextStyle(color: textMuted),
+                        style: const TextStyle(color: textMuted),
                       ),
                       activeThumbColor: primary,
                     ),
@@ -707,14 +709,14 @@ class _ContactFormPageState extends State<_ContactFormPage> {
                         strokeWidth: 2,
                       ),
                     )
-                        : Icon(Icons.save, color: Colors.white),
+                        : const Icon(Icons.save, color: Colors.white),
                     label: Text(
                       _isSaving
                           ? AppLanguage.text(context, 'Saving...', 'جارٍ الحفظ...')
                           : (_isEdit
                           ? AppLanguage.text(context, 'Save', 'حفظ')
                           : AppLanguage.text(context, 'Add Contact', 'إضافة جهة الاتصال')),
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
@@ -741,24 +743,29 @@ class _ContactFormPageState extends State<_ContactFormPage> {
     required String label,
     required IconData icon,
     TextInputType type = TextInputType.text,
+    int? maxLength,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: type,
+      maxLength: maxLength,
+      inputFormatters: inputFormatters,
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: primary),
         filled: true,
         fillColor: Colors.white,
+        counterText: "", 
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -766,7 +773,7 @@ class _ContactFormPageState extends State<_ContactFormPage> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: danger),
+          borderSide: const BorderSide(color: danger),
         ),
       ),
     );

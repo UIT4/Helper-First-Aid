@@ -152,15 +152,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           content: Text(message),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16), // مساحات داخلية متناسقة للأزرار
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppLanguage.text(context, 'Cancel', 'إلغاء')),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: danger),
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(title, style: const TextStyle(color: Colors.white)),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF1F5F9), // لون رمادي فاتح متناسق مع النوافذ المنبثقة
+                      foregroundColor: textMuted,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: Color(0xFFCBD5E1)), // حدود خفيفة لتحديد الزر
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(
+                      AppLanguage.text(context, 'Cancel', 'إلغاء'),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: danger,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
