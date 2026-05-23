@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -48,7 +49,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   String? selectedMedication;
   String? selectedMedicationDetail;
 
-  static const Color primary = Color(0xFF2563EB);
+  static Color get primary => AppColors.primary;
   static const Color danger = Color(0xFFDC2626);
   static const Color success = Color(0xFF16A34A);
   static const Color background = Color(0xFFF8FAFC);
@@ -246,7 +247,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       );
 
       final detectedCountry =
-          placemarks.isNotEmpty ? (placemarks.first.country ?? '') : '';
+      placemarks.isNotEmpty ? (placemarks.first.country ?? '') : '';
       final matchedCountry = _countryValueFromDetectedName(detectedCountry);
 
       if (!mounted) return;
@@ -296,7 +297,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
   Map<String, String> _selectedCountryInfo() {
     return countries.firstWhere(
-      (item) => item['en'] == countryCtrl.text.trim(),
+          (item) => item['en'] == countryCtrl.text.trim(),
       orElse: () => countries.first,
     );
   }
@@ -475,7 +476,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         appBar: AppBar(
           title: Text(
             AppLanguage.text(context, 'Medical Information', 'المعلومات الطبية'),
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
@@ -487,7 +488,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               onPressed: _toggleLanguage,
               child: Text(
                 isArabic ? 'English' : 'العربية',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -659,10 +660,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                   ),
                   onPressed: isSaving ? null : _finish,
                   child: isSaving
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? CircularProgressIndicator(color: Colors.white)
                       : Text(
                     AppLanguage.text(context, 'FINISH', 'إنهاء'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
@@ -731,20 +732,20 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         value: safeValue,
         decoration: InputDecoration(
           labelText: AppLanguage.text(context, 'Country', 'الدولة'),
-          prefixIcon: const Icon(Icons.public, color: primary),
+          prefixIcon: Icon(Icons.public, color: primary),
           suffixIcon: isLoadingLocation
               ? const Padding(
-                  padding: EdgeInsets.all(14),
-                  child: SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
+            padding: EdgeInsets.all(14),
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
               : IconButton(
-                  icon: const Icon(Icons.my_location),
-                  onPressed: _detectCountryFromLocation,
-                ),
+            icon: Icon(Icons.my_location),
+            onPressed: _detectCountryFromLocation,
+          ),
           filled: true,
           fillColor: Colors.white,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),

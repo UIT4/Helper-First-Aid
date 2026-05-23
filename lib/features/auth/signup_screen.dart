@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/constants/app_colors.dart';
 import '../../core/database/app_database.dart';
 import '../../core/language/app_language.dart';
 import 'questionnaire_screen.dart';
@@ -25,9 +26,12 @@ class _SignupScreenState extends State<SignupScreen> {
   final _confirmPasswordCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
 
-  static const Color primary = Color(0xFF2563EB);
+  String _selectedThemeColor = 'blue';
+
   static const Color danger = Color(0xFFDC2626);
   static const Color background = Color(0xFFF8FAFC);
+
+  Color get primary => Theme.of(context).colorScheme.primary;
 
   @override
   void dispose() {
@@ -184,6 +188,8 @@ class _SignupScreenState extends State<SignupScreen> {
         password: password,
       );
 
+      await AppColors.changeTheme(_selectedThemeColor);
+
       final prefs = await SharedPreferences.getInstance();
 
       await prefs.setBool('isGuest', false);
@@ -244,10 +250,12 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         subtitle: AppLanguage.text(
                           context,
-                          'Enter first, middle and last name',
-                          'أدخل الاسم الأول والثاني والأخير',
+                          'Choose app color and enter your full name',
+                          'اختر لون التطبيق ثم أدخل اسمك الكامل',
                         ),
                         children: [
+                          _buildThemeColorPicker(),
+                          const SizedBox(height: 30),
                           _field(
                             controller: _firstCtrl,
                             hint: AppLanguage.text(
@@ -378,6 +386,73 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildThemeColorPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLanguage.text(
+            context,
+            'Choose App Color',
+            'اختر لون التطبيق',
+          ),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            _colorOption('blue', AppColors.blue),
+            const SizedBox(width: 14),
+            _colorOption('orange', AppColors.orange),
+            const SizedBox(width: 14),
+            _colorOption('purple', AppColors.purple),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _colorOption(String value, Color color) {
+    final isSelected = _selectedThemeColor == value;
+
+    return GestureDetector(
+      onTap: () async {
+        setState(() {
+          _selectedThemeColor = value;
+        });
+
+        await AppColors.changeTheme(value);
+      },
+      child: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.transparent,
+            width: 3,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.35),
+              blurRadius: 12,
+            ),
+          ],
+        ),
+        child: isSelected
+            ? const Icon(
+          Icons.check,
+          color: Colors.white,
+        )
+            : null,
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,7 +45,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   bool _isSaving = false;
   bool _isEditing = false;
 
-  static const Color primary = Color(0xFF2563EB);
+  static Color get primary => AppColors.primary;
   static const Color background = Color(0xFFF8FAFC);
   static const Color danger = Color(0xFFDC2626);
   static const Color success = Color(0xFF16A34A);
@@ -447,12 +448,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         appBar: AppBar(
           title: Text(
             AppLanguage.text(context, 'Profile', 'الملف الشخصي'),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           backgroundColor: primary,
           centerTitle: true,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: Colors.white),
           actions: [
             TextButton.icon(
               onPressed: _isSaving
@@ -473,7 +474,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 _isEditing
                     ? AppLanguage.text(context, 'Save', 'حفظ')
                     : AppLanguage.text(context, 'Edit', 'تعديل'),
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -482,7 +483,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           ],
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: primary))
+            ? Center(child: CircularProgressIndicator(color: primary))
             : SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -521,7 +522,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   _validImageFile() ? FileImage(File(_imagePath!)) : null,
                   child: _validImageFile()
                       ? null
-                      : const Icon(
+                      : Icon(
                     Icons.person_rounded,
                     size: 62,
                     color: primary,
@@ -547,7 +548,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           Text(
             _profileName,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: textDark,
               fontSize: 23,
               fontWeight: FontWeight.bold,
@@ -557,7 +558,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           Text(
             _email,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: textMuted,
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -727,10 +728,10 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   strokeWidth: 2,
                 ),
               )
-                  : const Icon(Icons.save_rounded, color: Colors.white),
+                  : Icon(Icons.save_rounded, color: Colors.white),
               label: Text(
                 _isSaving ? AppLanguage.text(context, 'Saving...', 'جاري الحفظ...') : AppLanguage.text(context, 'Save Changes', 'حفظ التغييرات'),
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -841,7 +842,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             width: 95,
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: textMuted,
                 fontWeight: FontWeight.w600,
               ),
@@ -850,7 +851,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 color: textDark,
                 fontWeight: FontWeight.bold,
                 height: 1.4,
@@ -940,7 +941,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         value: safeValue,
         decoration: InputDecoration(
           labelText: AppLanguage.text(context, 'Sex', 'الجنس'),
-          prefixIcon: const Icon(Icons.wc_rounded, color: primary),
+          prefixIcon: Icon(Icons.wc_rounded, color: primary),
           filled: true,
           fillColor: background,
           border: OutlineInputBorder(

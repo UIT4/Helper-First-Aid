@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/database/app_database.dart';
@@ -22,7 +23,7 @@ class ResultScreen extends StatelessWidget {
     required this.userText,
   });
 
-  static const Color primary = Color(0xFF2563EB);
+  static Color get primary => AppColors.primary;
   static const Color danger = Color(0xFFDC2626);
   static const Color warning = Color(0xFFF97316);
   static const Color success = Color(0xFF16A34A);
@@ -123,10 +124,10 @@ class ResultScreen extends StatelessWidget {
           backgroundColor: primary,
           centerTitle: true,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: Colors.white),
           title: Text(
             AppLanguage.text(context, 'Prediction Result', 'نتيجة التحليل'),
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
@@ -224,7 +225,7 @@ class ResultScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             AppLanguage.text(context, 'Predicted Condition', 'تم توقع الحالة'),
-            style: const TextStyle(
+            style: TextStyle(
               color: textMuted,
               fontSize: 15,
               fontWeight: FontWeight.w500,
@@ -234,7 +235,7 @@ class ResultScreen extends StatelessWidget {
           Text(
             _categoryDisplay(context, category),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: textDark,
               fontSize: 30,
               fontWeight: FontWeight.bold,
@@ -263,14 +264,14 @@ class ResultScreen extends StatelessWidget {
             children: [
               Text(
                 AppLanguage.text(context, 'Confidence', 'نسبة الثقة'),
-                style: const TextStyle(
+                style: TextStyle(
                   color: textMuted,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
                 '${confidencePercent.toStringAsFixed(0)}%',
-                style: const TextStyle(
+                style: TextStyle(
                   color: primary,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -297,7 +298,7 @@ class ResultScreen extends StatelessWidget {
                 : Alignment.centerLeft,
             child: Text(
               AppLanguage.text(context, 'Your Description', 'الوصف المدخل'),
-              style: const TextStyle(
+              style: TextStyle(
                 color: textDark,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
@@ -315,7 +316,7 @@ class ResultScreen extends StatelessWidget {
             ),
             child: Text(
               userText,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Color(0xFF334155),
                 fontSize: 14,
                 height: 1.5,
@@ -347,7 +348,7 @@ class ResultScreen extends StatelessWidget {
         icon: Icon(icon, color: Colors.white),
         label: Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.3,
@@ -369,7 +370,7 @@ class ResultScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.warning_amber_rounded, color: warning),
+          Icon(Icons.warning_amber_rounded, color: warning),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -378,7 +379,7 @@ class ResultScreen extends StatelessWidget {
                 'This app provides first-aid guidance only and is not a replacement for professional medical assistance.',
                 'هذا التطبيق يقدم إرشادات إسعافية أولية فقط وليس بديلاً عن المساعدة الطبية الاحترافية.',
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 color: Color(0xFF7C2D12),
                 fontSize: 13,
                 height: 1.5,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/language/app_language.dart';
@@ -50,8 +51,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       'descAr':
       'احصل على إرشادات الإسعافات الأولية خطوة بخطوة حتى بدون إنترنت.',
       'icon': Icons.offline_bolt_rounded,
-      'color': Color(0xFF2563EB),
-      'bg': Color(0xFFEFF6FF),
+      'color': AppColors.primary,
+      'bg': AppColors.primary.withValues(alpha: 0.08),
     },
     {
       'title': 'Smart AI Diagnosis',
@@ -167,7 +168,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             'Rescue',
                             'الإسعاف',
                           ),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                             color: Color(0xFF0F172A),
@@ -262,7 +263,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                       'Next',
                                       'التالي',
                                     ),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 17,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -332,7 +333,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 page['titleAr'] as String,
               ),
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF0F172A),
@@ -347,7 +348,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 page['descAr'] as String,
               ),
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 color: Color(0xFF64748B),
                 height: 1.6,

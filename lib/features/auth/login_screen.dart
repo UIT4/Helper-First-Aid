@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
@@ -20,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _rememberMe = false;
 
-  static const Color primary = Color(0xFF2563EB);
+  static Color get primary => AppColors.primary;
   static const Color background = Color(0xFFF8FAFC);
   static const Color danger = Color(0xFFDC2626);
   static const Color success = Color(0xFF16A34A);
@@ -231,9 +232,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 30),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [primary, Color(0xFF1E40AF)],
+          colors: [primary, AppColors.primary.withValues(alpha: 0.80)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -249,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: _toggleLanguage,
                 child: Text(
                   isArabic ? 'English' : 'العربية',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
@@ -257,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          const Icon(
+          Icon(
             Icons.health_and_safety_rounded,
             color: Colors.white,
             size: 78,
@@ -265,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 16),
           Text(
             AppLanguage.text(context, 'Rescue Assistant', 'مساعد الإسعاف'),
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 26,
               fontWeight: FontWeight.bold,
@@ -278,7 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
               'Instant emergency help',
               'مساعدة فورية في الحالات الطارئة',
             ),
-            style: const TextStyle(color: Colors.white70, fontSize: 15),
+            style: TextStyle(color: Colors.white70, fontSize: 15),
           ),
         ],
       ),
@@ -342,7 +343,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             Text(
               AppLanguage.text(context, 'Remember', 'تذكرني'),
-              style: const TextStyle(fontSize: 13),
+              style: TextStyle(fontSize: 13),
             ),
           ],
         ),
@@ -350,7 +351,7 @@ class _LoginScreenState extends State<LoginScreen> {
           onPressed: _forgotPassword,
           child: Text(
             AppLanguage.text(context, 'Forgot Password?', 'نسيت كلمة المرور؟'),
-            style: const TextStyle(
+            style: TextStyle(
               color: Color(0xFF334155),
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -376,7 +377,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: Text(
           AppLanguage.text(context, 'Log in', 'تسجيل الدخول'),
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
             fontSize: 17,
             fontWeight: FontWeight.bold,
@@ -396,7 +397,7 @@ class _LoginScreenState extends State<LoginScreen> {
       },
       child: Text(
         AppLanguage.text(context, 'CREATE ACCOUNT', 'إنشاء حساب'),
-        style: const TextStyle(
+        style: TextStyle(
           color: primary,
           fontWeight: FontWeight.bold,
         ),
@@ -412,7 +413,7 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             TextSpan(
               text: AppLanguage.text(context, 'FIRST HELP? ', 'مساعدة أولية؟ '),
-              style: const TextStyle(
+              style: TextStyle(
                 color: danger,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -420,7 +421,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             TextSpan(
               text: AppLanguage.text(context, 'CLICK HERE', 'اضغط هنا'),
-              style: const TextStyle(
+              style: TextStyle(
                 color: danger,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,

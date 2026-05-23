@@ -334,10 +334,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String themeName,
   }) {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          AppColors.changeTheme(themeName);
-        });
+      onTap: () async {
+        await AppColors.changeTheme(themeName);
+
+        if (!mounted) return;
+
+        setState(() {});
 
         _showSnackbar(
           AppLanguage.text(

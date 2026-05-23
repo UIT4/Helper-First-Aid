@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/language/app_language.dart';
@@ -23,7 +24,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   String generatedOtp = '';
 
-  static const Color primary = Color(0xFF2563EB);
+  static Color get primary => AppColors.primary;
   static const Color danger = Color(0xFFDC2626);
   static const Color success = Color(0xFF16A34A);
   static const Color background = Color(0xFFF8FAFC);
@@ -258,7 +259,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.lock_reset_rounded,
                     size: 70,
                     color: primary,
@@ -271,7 +272,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       'إعادة تعيين كلمة المرور',
                     ),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       color: textDark,
                       fontWeight: FontWeight.bold,
@@ -285,7 +286,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       'أدخل الإيميل، تحقق من الكود، ثم أنشئ كلمة مرور جديدة.',
                     ),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: textMuted,
                       height: 1.5,
                     ),
@@ -434,7 +435,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         child: Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -447,18 +448,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline, color: primary),
+          Icon(Icons.info_outline, color: primary),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 color: textDark,
                 fontWeight: FontWeight.w600,
               ),

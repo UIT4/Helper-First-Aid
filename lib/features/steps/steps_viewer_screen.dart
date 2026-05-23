@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -25,7 +26,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
   bool _isLoading = true;
   String _categoryName = '';
 
-  static const Color primary = Color(0xFF2563EB);
+  static Color get primary => AppColors.primary;
   static const Color danger = Color(0xFFDC2626);
   static const Color success = Color(0xFF16A34A);
   static const Color background = Color(0xFFF8FAFC);
@@ -182,7 +183,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                     'Send Emergency SMS',
                     'إرسال رسالة طوارئ',
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -194,7 +195,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                     'To: $phone',
                     'إلى: $phone',
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: textMuted,
                   ),
                 ),
@@ -208,7 +209,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                   ),
                   child: Text(
                     body,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       height: 1.5,
                     ),
@@ -233,7 +234,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.copy, size: 18),
+                        icon: Icon(Icons.copy, size: 18),
                         label: Text(
                           AppLanguage.text(
                             context,
@@ -271,7 +272,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                             );
                           }
                         },
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.send,
                           size: 18,
                           color: Colors.white,
@@ -282,7 +283,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                             'Send SMS',
                             'إرسال',
                           ),
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primary,
@@ -318,7 +319,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
             ),
             title: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.check_circle,
                   color: success,
                   size: 28,
@@ -330,7 +331,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                     'Well Done!',
                     'أحسنت!',
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -362,7 +363,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                     'Done',
                     'تم',
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
@@ -417,7 +418,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
         appBar: AppBar(
           title: Text(
             _categoryName,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -425,10 +426,10 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
           backgroundColor: primary,
           centerTitle: true,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: Colors.white),
         ),
         body: _isLoading
-            ? const Center(
+            ?  Center(
           child: CircularProgressIndicator(color: primary),
         )
             : _steps.isEmpty
@@ -481,7 +482,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                   'Step ${_currentStep + 1} of ${_steps.length}',
                   'الخطوة ${_currentStep + 1} من ${_steps.length}',
                 ),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: textMuted,
@@ -489,7 +490,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
               ),
               Text(
                 '${(progress * 100).toInt()}%',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: primary,
@@ -503,7 +504,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
             child: LinearProgressIndicator(
               value: progress,
               backgroundColor: const Color(0xFFF1F5F9),
-              valueColor: const AlwaysStoppedAnimation<Color>(primary),
+              valueColor: AlwaysStoppedAnimation<Color>(primary),
               minHeight: 7,
             ),
           ),
@@ -526,7 +527,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
             padding: const EdgeInsets.all(18),
             child: Text(
               _stepBody(step),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 color: textDark,
                 height: 1.6,
@@ -558,7 +559,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
         horizontal: 18,
         vertical: 14,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: primary,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(20),
@@ -576,7 +577,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
             alignment: Alignment.center,
             child: Text(
               '${_currentStep + 1}',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -587,7 +588,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
           Expanded(
             child: Text(
               _stepTitle(step),
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 17,
@@ -608,7 +609,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _prevStep,
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_back,
                   size: 18,
                   color: textMuted,
@@ -619,11 +620,11 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                     'Previous',
                     'السابق',
                   ),
-                  style: const TextStyle(color: textMuted),
+                  style: TextStyle(color: textMuted),
                 ),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 13),
-                  side: const BorderSide(
+                  side: BorderSide(
                     color: Color(0xFFCBD5E1),
                   ),
                   shape: RoundedRectangleBorder(
@@ -658,7 +659,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                   "I'm Done",
                   'انتهيت',
                 ),
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -693,7 +694,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                 'All Steps',
                 'كل الخطوات',
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: textMuted,
@@ -725,7 +726,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
           vertical: 12,
         ),
         decoration: BoxDecoration(
-          color: isCurrent ? const Color(0xFFEFF6FF) : Colors.transparent,
+          color: isCurrent ? AppColors.primary.withValues(alpha: 0.08) : Colors.transparent,
           border: Border(
             bottom: BorderSide(
               color: index < _steps.length - 1
@@ -757,7 +758,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
               ),
             ),
             if (isCurrent)
-              const Icon(
+              Icon(
                 Icons.chevron_right,
                 color: primary,
                 size: 20,
@@ -786,7 +787,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
       ),
       alignment: Alignment.center,
       child: isDone
-          ? const Icon(
+          ? Icon(
         Icons.check,
         size: 16,
         color: Colors.white,
@@ -837,14 +838,14 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                   ),
                 ),
                 onPressed: _callEmergency,
-                icon: const Icon(
+                icon: Icon(
                   Icons.call,
                   color: Colors.white,
                   size: 20,
                 ),
                 label: Text(
                   emergencyLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
@@ -863,7 +864,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                   ),
                 ),
                 onPressed: _sendSms,
-                icon: const Icon(
+                icon: Icon(
                   Icons.sms,
                   color: Colors.white,
                   size: 20,
@@ -874,7 +875,7 @@ class _StepsViewerScreenState extends State<StepsViewerScreen> {
                     'Send SMS',
                     'إرسال رسالة',
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,

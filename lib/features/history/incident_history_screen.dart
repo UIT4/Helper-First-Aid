@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/language/app_language.dart';
@@ -18,7 +19,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
   bool _isLoading = true;
   String _filterUrgency = 'all';
 
-  static const Color primary = Color(0xFF2563EB);
+  static Color get primary => AppColors.primary;
   static const Color danger = Color(0xFFDC2626);
   static const Color warning = Color(0xFFF97316);
   static const Color success = Color(0xFF16A34A);
@@ -272,7 +273,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
               'Incident History',
               'سجل الحوادث',
             ),
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -280,11 +281,11 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
           backgroundColor: primary,
           centerTitle: true,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: Colors.white),
           actions: [
             IconButton(
               tooltip: AppLanguage.text(context, 'Sync', 'مزامنة'),
-              icon: const Icon(
+              icon: Icon(
                 Icons.cloud_upload_rounded,
                 color: Colors.white,
               ),
@@ -292,13 +293,13 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
             ),
             IconButton(
               tooltip: AppLanguage.text(context, 'Refresh', 'تحديث'),
-              icon: const Icon(Icons.refresh_rounded),
+              icon: Icon(Icons.refresh_rounded),
               onPressed: _loadIncidents,
             ),
           ],
         ),
         body: _isLoading
-            ? const Center(
+            ? Center(
           child: CircularProgressIndicator(color: primary),
         )
             : RefreshIndicator(
@@ -333,7 +334,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: primary,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(28),
@@ -388,7 +389,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 21,
               fontWeight: FontWeight.bold,
@@ -398,7 +399,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white70,
               fontSize: 12,
             ),
@@ -494,7 +495,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
         children: [
           Text(
             countText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               color: textMuted,
               fontWeight: FontWeight.w600,
@@ -507,7 +508,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
               'Pull down to refresh',
               'اسحب للأسفل للتحديث',
             ),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               color: Color(0xFF94A3B8),
             ),
@@ -579,7 +580,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: textDark,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -588,7 +589,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
               const SizedBox(height: 4),
               Text(
                 _formatDate(incident['created_at']?.toString()),
-                style: const TextStyle(
+                style: TextStyle(
                   color: textMuted,
                   fontSize: 12,
                 ),
@@ -650,7 +651,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
             input,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: Color(0xFF334155),
               fontSize: 13,
               height: 1.45,
@@ -672,7 +673,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
         const SizedBox(height: 12),
         Row(
           children: [
-            const Icon(
+            Icon(
               Icons.location_on_rounded,
               size: 18,
               color: textMuted,
@@ -683,7 +684,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                 '$lat, $lng',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: textMuted,
                   fontSize: 12,
                 ),
@@ -740,8 +741,8 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
         Container(
           width: 110,
           height: 110,
-          decoration: const BoxDecoration(
-            color: Color(0xFFEFF6FF),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.08),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -764,7 +765,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
             'لا توجد حوادث بعد',
           ),
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             color: textDark,
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -784,7 +785,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
             'عندما تصف حالة طارئة، ستظهر الحوادث المحفوظة هنا حتى دون إنترنت.',
           ),
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             color: textMuted,
             fontSize: 14,
             height: 1.5,
@@ -793,13 +794,13 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
         const SizedBox(height: 24),
         OutlinedButton.icon(
           onPressed: _loadIncidents,
-          icon: const Icon(Icons.refresh_rounded),
+          icon: Icon(Icons.refresh_rounded),
           label: Text(
             AppLanguage.text(context, 'Refresh', 'تحديث'),
           ),
           style: OutlinedButton.styleFrom(
             foregroundColor: primary,
-            side: const BorderSide(color: primary),
+            side: BorderSide(color: primary),
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),

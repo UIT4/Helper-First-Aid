@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'core/constants/app_theme.dart';
+import 'core/constants/theme_controller.dart';
 import 'core/language/app_language.dart';
 import 'features/splash/splash_screen.dart';
 
@@ -17,6 +18,7 @@ Future<void> main() async {
   }
 
   await AppLanguage.load();
+  await ThemeController.load();
 
   runApp(const RescueAssistant());
 }
@@ -26,24 +28,29 @@ class RescueAssistant extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Locale?>(
-      valueListenable: AppLanguage.localeNotifier,
-      builder: (context, locale, _) {
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'Rescue Assistant',
-          locale: locale,
-          supportedLocales: const [
-            Locale('en'),
-            Locale('ar'),
-          ],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          theme: AppTheme.lightTheme(),
-          home: const SplashScreen(),
+    return ValueListenableBuilder<String>(
+      valueListenable: ThemeController.themeNameNotifier,
+      builder: (context, themeName, _) {
+        return ValueListenableBuilder<Locale?>(
+          valueListenable: AppLanguage.localeNotifier,
+          builder: (context, locale, _) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'Rescue Assistant',
+              locale: locale,
+              supportedLocales: const [
+                Locale('en'),
+                Locale('ar'),
+              ],
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              theme: AppTheme.lightTheme(ThemeController.primaryColor),
+              home: const SplashScreen(),
+            );
+          },
         );
       },
     );

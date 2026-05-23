@@ -1,55 +1,63 @@
 import 'package:flutter/material.dart';
+
 import 'app_colors.dart';
 
 class AppTheme {
-
-  static ThemeData lightTheme() {
-
+  static ThemeData lightTheme(Color primaryColor) {
     return ThemeData(
-
-    scaffoldBackgroundColor: AppColors.background,
-
-    primaryColor: AppColors.primary,
-
-    fontFamily: "Cairo",
-
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      centerTitle: true,
-    ),
-
-    cardTheme: CardThemeData(
-      color: AppColors.card,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+      useMaterial3: true,
+      scaffoldBackgroundColor: AppColors.background,
+      primaryColor: primaryColor,
+      fontFamily: 'Cairo',
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryColor,
+        primary: primaryColor,
+        brightness: Brightness.light,
       ),
-    ),
-
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        minimumSize: const Size(double.infinity, 60),
+      appBarTheme: AppBarTheme(
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.card,
+        elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        textStyle: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 60),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
-    ),
-
-    textTheme: const TextTheme(
-      bodyLarge: TextStyle(
-        color: AppColors.textPrimary,
-        fontSize: 18,
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return primaryColor;
+          }
+          return null;
+        }),
       ),
-      bodyMedium: TextStyle(
-        color: AppColors.textSecondary,
-        fontSize: 16,
-      ),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 18,
+        ),
+        bodyMedium: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 16,
+        ),
       ),
     );
   }

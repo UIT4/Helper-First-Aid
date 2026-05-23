@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/language/app_language.dart';
@@ -15,7 +16,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   List<Map<String, dynamic>> _categories = [];
   bool _isLoading = true;
 
-  static const Color primary = Color(0xFF2563EB);
+  static Color get primary => AppColors.primary;
 
   @override
   void initState() {
@@ -159,7 +160,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               'Manual Categories',
               'الفئات اليدوية',
             ),
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -167,10 +168,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           backgroundColor: primary,
           centerTitle: true,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: Colors.white),
         ),
         body: _isLoading
-            ? const Center(
+            ?  Center(
           child: CircularProgressIndicator(
             color: primary,
           ),
@@ -179,14 +180,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           children: [
             Container(
               width: double.infinity,
-              color: const Color(0xFFEFF6FF),
+              color: AppColors.primary.withValues(alpha: 0.08),
               padding: const EdgeInsets.symmetric(
                 horizontal: 20,
                 vertical: 12,
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.info_outline,
                     color: primary,
                     size: 18,
@@ -199,9 +200,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         'Select category to view first aid steps',
                         'اختر الحالة لعرض خطوات الإسعاف',
                       ),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF1E40AF),
+                        color: AppColors.primary.withValues(alpha: 0.80),
                       ),
                     ),
                   ),
@@ -217,7 +218,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     'No categories available',
                     'لا توجد تصنيفات متاحة',
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Color(0xFF64748B),
                     fontWeight: FontWeight.w600,
                   ),
@@ -308,7 +309,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               child: Text(
                 name,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0F172A),

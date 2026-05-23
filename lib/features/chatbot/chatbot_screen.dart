@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
@@ -348,7 +349,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           children: [
             Text(
               AppLanguage.text(context, 'Select Language', 'اختر اللغة'),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _langOption(
@@ -395,14 +396,14 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     final selected = _selectedLang == val;
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Text(flag, style: const TextStyle(fontSize: 28)),
+      leading: Text(flag, style: TextStyle(fontSize: 28)),
       title: Text(label,
           style: TextStyle(
               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-              color: selected ? const Color(0xFF2563EB) : const Color(0xFF0F172A))),
-      subtitle: Text(sub, style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+              color: selected ? AppColors.primary : const Color(0xFF0F172A))),
+      subtitle: Text(sub, style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
       trailing: selected
-          ? const Icon(Icons.check_circle, color: Color(0xFF2563EB))
+          ? Icon(Icons.check_circle, color: AppColors.primary)
           : null,
       onTap: () => Navigator.pop(context, val),
     );
@@ -674,10 +675,10 @@ class _ChatbotScreenState extends State<ChatbotScreen>
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: const Color(0xFF2563EB),
+      backgroundColor: AppColors.primary,
       centerTitle: true,
       elevation: 0,
-      iconTheme: const IconThemeData(color: Colors.white),
+      iconTheme: IconThemeData(color: Colors.white),
       title: Column(
         children: [
           Text(
@@ -692,7 +693,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
               'Rescue Assistant',
               'مساعد الإسعاف',
             ),
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.white,
               fontSize: 16,
@@ -700,14 +701,14 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           ),
           Text(
             _currentLanguageLabel(),
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
+            style: TextStyle(color: Colors.white70, fontSize: 11),
           ),
         ],
       ),
       actions: [
 
         IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.language,
             color: Colors.white,
           ),
@@ -715,7 +716,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         ),
 
         IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.call,
             color: Colors.white,
           ),
@@ -737,7 +738,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(
               AppLanguage.text(context, 'Tap a situation or type:', 'اختر أو اكتب الحالة:'),
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 12,
                   color: Color(0xFF64748B),
                   fontWeight: FontWeight.w500),
@@ -759,15 +760,15 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: AppColors.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.3)),
+                          color: AppColors.primary.withValues(alpha: 0.3)),
                     ),
                     child: Text(label,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF2563EB),
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w500)),
                   ),
                 );
@@ -794,7 +795,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         ),
         decoration: BoxDecoration(
           color: isUser
-              ? const Color(0xFF2563EB)
+              ? AppColors.primary
               : Colors.white,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
@@ -910,14 +911,14 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                   color: const Color(0xFFFFF7ED),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.help_outline,
+                child: Icon(Icons.help_outline,
                     color: Color(0xFFF97316), size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   AppLanguage.text(context, 'Situation not identified', 'لم أتعرف على الحالة'),
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                       color: Color(0xFF92400E)),
@@ -928,7 +929,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           const SizedBox(height: 10),
           Text(
             msg['text'] ?? '',
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 14, color: Color(0xFF475569), height: 1.5),
           ),
           const SizedBox(height: 14),
@@ -943,10 +944,10 @@ class _ChatbotScreenState extends State<ChatbotScreen>
               ),
               onPressed: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const CategoriesScreen())),
-              icon: const Icon(Icons.category, color: Colors.white, size: 18),
+              icon: Icon(Icons.category, color: Colors.white, size: 18),
               label: Text(
                 AppLanguage.text(context, 'Choose Category Manually', 'اختر التصنيف يدوياً'),
-                style: const TextStyle(
+                style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
@@ -981,10 +982,10 @@ class _ChatbotScreenState extends State<ChatbotScreen>
               margin: const EdgeInsets.only(bottom: 2),
               child: CircleAvatar(
                 radius: 22,
-                backgroundColor: const Color(0xFFEFF6FF),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.08),
                 child: IconButton(
-                  icon: const Icon(Icons.camera_alt_rounded,
-                      color: Color(0xFF2563EB), size: 20),
+                  icon: Icon(Icons.camera_alt_rounded,
+                      color: AppColors.primary, size: 20),
                   onPressed: _pickFromCamera,
                   padding: EdgeInsets.zero,
                 ),
@@ -1008,7 +1009,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                     'Describe the emergency...',
                     'صف الحالة الطارئة...',
                   ),
-                  hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                  hintStyle: TextStyle(color: Color(0xFF94A3B8)),
                   filled: true,
                   fillColor: const Color(0xFFF1F5F9),
                   border: OutlineInputBorder(
@@ -1017,8 +1018,8 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(22),
-                    borderSide: const BorderSide(
-                        color: Color(0xFF2563EB), width: 1.5),
+                    borderSide: BorderSide(
+                        color: AppColors.primary, width: 1.5),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: 18, vertical: 10),
@@ -1032,7 +1033,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
               margin: const EdgeInsets.only(bottom: 2),
               child: CircleAvatar(
                 radius: 24,
-                backgroundColor: const Color(0xFF2563EB),
+                backgroundColor: AppColors.primary,
                 child: IconButton(
                   icon: _isLoading
                       ? const SizedBox(
@@ -1043,7 +1044,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                       strokeWidth: 2,
                     ),
                   )
-                      : const Icon(
+                      : Icon(
                     Icons.send_rounded,
                     color: Colors.white,
                     size: 20,
@@ -1104,8 +1105,8 @@ class _TypingDotState extends State<_TypingDot>
         child: Container(
           width: 8,
           height: 8,
-          decoration: const BoxDecoration(
-              color: Color(0xFF2563EB), shape: BoxShape.circle),
+          decoration: BoxDecoration(
+              color: AppColors.primary, shape: BoxShape.circle),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isCheckingUpdates = false;
   bool _isGuest = false;
 
-  static const Color primary = Color(0xFF2563EB);
+  static Color get primary => AppColors.primary;
   static const Color danger = Color(0xFFDC2626);
   static const Color success = Color(0xFF16A34A);
   static const Color background = Color(0xFFF8FAFC);
@@ -167,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Login Required',
                 'تسجيل الدخول مطلوب',
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -221,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Sign up',
                     'إنشاء حساب',
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                   ),
                 ),
@@ -263,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Rescue Assistant',
               'مساعد الإسعاف',
             ),
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -271,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: primary,
           centerTitle: true,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: Colors.white),
         ),
         drawer: _buildDrawer(),
         body: RefreshIndicator(
@@ -311,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 34),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: primary,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(34),
@@ -326,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.white.withValues(alpha: 0.16),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.health_and_safety,
               size: 58,
               color: Colors.white,
@@ -339,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Emergency?',
               'حالة طارئة؟',
             ),
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -353,7 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'صف الحالة واحصل على إرشادات إسعاف أولي فورية',
             ),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white70,
               fontSize: 15,
               height: 1.5,
@@ -385,7 +386,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.warning_amber_rounded,
                       color: Colors.white,
                       size: 28,
@@ -397,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'I NEED HELP',
                         'أحتاج مساعدة',
                       ),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -446,7 +447,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: danger.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.call,
                 color: danger,
                 size: 28,
@@ -463,7 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Call Emergency',
                       'اتصال طوارئ',
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: textDark,
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
@@ -476,7 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Tap to call $_emergencyNumber immediately',
                       'اضغط للاتصال فوراً بـ $_emergencyNumber',
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: textMuted,
                       fontSize: 13,
                     ),
@@ -484,7 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.arrow_forward_ios_rounded,
               size: 18,
               color: Color(0xFF94A3B8),
@@ -499,9 +500,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -525,7 +526,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Offline guidance is ready. Updates will sync when server is available.',
                 'الإرشادات غير المتصلة جاهزة وسيتم مزامنة التحديثات عند توفر الخادم.',
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 color: Color(0xFF1E3A8A),
                 fontSize: 13,
                 height: 1.4,
@@ -549,7 +550,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.warning_amber_rounded,
             color: Color(0xFFF97316),
           ),
@@ -561,7 +562,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 'This app provides first-aid guidance only. It is not a medical diagnosis tool. In serious emergencies, call emergency services immediately.',
                 'هذا التطبيق يقدم إرشادات إسعاف أولي فقط وليس أداة تشخيص طبي. في الحالات الخطيرة، اتصل بخدمات الطوارئ فوراً.',
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 color: Color(0xFF7C2D12),
                 fontSize: 13,
                 height: 1.5,
@@ -696,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: primary,
         borderRadius: BorderRadius.only(
           bottomRight: Radius.circular(28),
@@ -705,7 +706,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.health_and_safety,
             color: Colors.white,
             size: 46,
@@ -717,7 +718,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Rescue Assistant',
               'مساعد الإسعاف',
             ),
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 21,
               fontWeight: FontWeight.bold,
@@ -730,7 +731,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Emergency guidance app',
               'تطبيق إرشادات الطوارئ',
             ),
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white70,
               fontSize: 13,
             ),
@@ -749,7 +750,7 @@ class _HomeScreenState extends State<HomeScreen> {
       leading: Icon(icon, color: primary),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           color: textDark,
           fontWeight: FontWeight.w600,
         ),
