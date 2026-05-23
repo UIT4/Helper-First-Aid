@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import '../../core/constants/app_colors.dart';
 
 import '../../core/database/app_database.dart';
@@ -14,13 +17,14 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   final _otpCtrl = TextEditingController();
   final _newPassCtrl = TextEditingController();
   final _confirmPassCtrl = TextEditingController();
 
   bool codeSent = false;
   bool verified = false;
+  bool isLoading = false;
 
   String generatedOtp = '';
 
@@ -33,7 +37,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   void dispose() {
-    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
     _otpCtrl.dispose();
     _newPassCtrl.dispose();
     _confirmPassCtrl.dispose();
@@ -52,65 +56,122 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _showSnack(
-      String msg, {
-        bool error = false,
-      }) {
+    String msg, {
+    bool error = false,
+  }) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
         backgroundColor: error ? danger : success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }
-
+  
   Future<void> _sendCode() async {
-    final email = _emailCtrl.text.trim().toLowerCase();
+    final phone = _phoneCtrl.text.trim();
 
-    if (email.isEmpty) {
+    if (phone.isEmpty) {
       _showSnack(
         AppLanguage.text(
           context,
-          'Enter your email',
-          'أدخل الإيميل',
+          'Enter your phone number',
+          'أدخل رقم الهاتف',
         ),
         error: true,
       );
       return;
     }
 
-    final user = await AppDatabase.instance.getUserByEmail(email);
-
-    if (user == null) {
+    if (phone.length != 10 || !RegExp(r'^[0-9]+$').hasMatch(phone)) {
       _showSnack(
         AppLanguage.text(
           context,
-          'No account found with this email',
-          'لا يوجد حساب بهذا الإيميل',
+          'Phone number must be exactly 10 digits',
+          'يجب أن يتكون رقم الهاتف من 10 أرقام تماماً',
         ),
         error: true,
       );
       return;
     }
 
-    generatedOtp = _generateOtp();
+    setState(() => isLoading = true);
 
-    setState(() {
-      codeSent = true;
-      verified = false;
-      _otpCtrl.clear();
-    });
+    try {
+      final user = await AppDatabase.instance.getUserByPhone(phone);
 
-    _showSnack(
-      AppLanguage.text(
-        context,
-        'Verification code: $generatedOtp',
-        'رمز التحقق: $generatedOtp',
-      ),
-    );
+      if (user == null) {
+        _showSnack(
+          AppLanguage.text(
+            context,
+            'No account found with this phone number',
+            'لا يوجد حساب مسجل برقم الهاتف هذا',
+          ),
+          error: true,
+        );
+        setState(() => isLoading = false);
+        return;
+      }
+
+      generatedOtp = _generateOtp();
+
+      // 💡 تعديل الـ IP هنا ضروري ليفهم المحاكي السيرفر الخاص بك
+      // استخدم '10.0.2.2' لمحاكي الأندرويد الافتراضي بدلاً من localhost
+      final url = Uri.parse('http://10.0.2.2/rescue_assistant_api/send_otp.php'); 
+      
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'phone': phone,
+          'otp': generatedOtp,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          codeSent = true;
+          verified = false;
+          _otpCtrl.clear();
+        });
+
+        _showSnack(
+          AppLanguage.text(
+            context,
+            'Verification code sent successfully to server',
+            'تم إرسال رمز التحقق إلى السيرفر بنجاح',
+          ),
+        );
+      } else {
+        _showSnack(
+          AppLanguage.text(
+            context,
+            'Server error (${response.statusCode}), failed to send code',
+            'فشل السيرفر في استقبال الكود - خطأ رقم ${response.statusCode}',
+          ),
+          error: true,
+        );
+      }
+    } catch (e) {
+      // في حال وجود مشكلة حقيقية بالاتصال تظهر لك هنا لتفحصها
+      _showSnack(
+        AppLanguage.text(
+          context,
+          'Connection Error: Cannot connect to server',
+          'خطأ في الاتصال: لا يمكن الوصول للسيرفر حالياً',
+        ),
+        error: true,
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
-
+  
   void _verifyCode() {
     final enteredOtp = _otpCtrl.text.trim();
 
@@ -146,7 +207,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       AppLanguage.text(
         context,
         'Code verified',
-        'تم التحقق من الكود',
+        'تم التحقق من الكود بنجاح',
       ),
     );
   }
@@ -192,7 +253,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
 
     final updated = await AppDatabase.instance.updateUserPassword(
-      email: _emailCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
       newPassword: newPass,
     );
 
@@ -236,8 +297,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               'Forgot Password',
               'نسيت كلمة المرور',
             ),
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
           ),
           backgroundColor: primary,
+          iconTheme: const IconThemeData(color: Colors.white),
+          centerTitle: true,
+          elevation: 0,
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -250,7 +315,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 borderRadius: BorderRadius.circular(22),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),
@@ -282,26 +347,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   Text(
                     AppLanguage.text(
                       context,
-                      'Enter your email, verify the generated code, then create a new password.',
-                      'أدخل الإيميل، تحقق من الكود، ثم أنشئ كلمة مرور جديدة.',
+                      'Enter your registered phone number, verify the code, then create a new password.',
+                      'أدخل رقم هاتفك المسجل، تحقق من الكود، ثم أنشئ كلمة مرور جديدة.',
                     ),
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: textMuted,
+                      fontSize: 14,
                       height: 1.5,
                     ),
                   ),
                   const SizedBox(height: 28),
                   _inputField(
-                    controller: _emailCtrl,
+                    controller: _phoneCtrl,
                     hint: AppLanguage.text(
                       context,
-                      'Gmail Email',
-                      'البريد الإلكتروني Gmail',
+                      'Phone Number (10 digits)',
+                      'رقم الهاتف (10 أرقام)',
                     ),
-                    icon: Icons.email_outlined,
-                    keyboard: TextInputType.emailAddress,
+                    icon: Icons.phone_android_rounded,
+                    keyboard: TextInputType.phone,
                     enabled: !codeSent,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
                   ),
                   const SizedBox(height: 18),
                   if (!codeSent)
@@ -312,13 +382,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         'إرسال الكود',
                       ),
                       onTap: _sendCode,
+                      isLoading: isLoading,
                     ),
                   if (codeSent) ...[
                     _infoBox(
                       AppLanguage.text(
                         context,
-                        'Generated OTP code: $generatedOtp',
-                        'الكود العشوائي: $generatedOtp',
+                        'Enter the 4-digit code sent to your phone',
+                        'أدخل رمز التحقق المكون من 4 أرقام المرسل لهاتفك',
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -332,6 +403,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       icon: Icons.sms_outlined,
                       keyboard: TextInputType.number,
                       enabled: !verified,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(4),
+                      ],
                     ),
                     const SizedBox(height: 18),
                     if (!verified)
@@ -393,6 +468,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     bool obscure = false,
     bool enabled = true,
     TextInputType keyboard = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextField(
       controller: controller,
@@ -400,6 +476,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       enabled: enabled,
       keyboardType: keyboard,
       textDirection: TextDirection.ltr,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: Icon(icon, color: primary),
@@ -420,11 +497,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget _button({
     required String text,
     required VoidCallback onTap,
+    bool isLoading = false,
   }) {
     return SizedBox(
       height: 56,
       child: ElevatedButton(
-        onPressed: onTap,
+        onPressed: isLoading ? null : onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
           foregroundColor: Colors.white,
@@ -433,13 +511,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
+              )
+            : Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
     );
   }
@@ -459,9 +546,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
+              style: const TextStyle(
                 color: textDark,
                 fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
             ),
           ),
