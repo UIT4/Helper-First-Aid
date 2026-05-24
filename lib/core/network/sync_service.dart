@@ -9,7 +9,6 @@ import '../constants/api_constants.dart';
 import '../database/app_database.dart';
 
 class SyncService {
-
   static Future<String> getOrCreateDeviceId() async {
     final prefs = await SharedPreferences.getInstance();
     var id = prefs.getString('device_id');
@@ -31,6 +30,7 @@ class SyncService {
 
     final profile = await db.getProfile();
     final user = await db.getCurrentUserAccount();
+
     if (profile == null && user == null) return;
 
     final contacts = await db.getContacts();
@@ -67,13 +67,16 @@ class SyncService {
     try {
       final response = await http
           .post(
-            Uri.parse(ApiConstants.syncProfile),
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode(payload),
-          )
+        Uri.parse(ApiConstants.syncProfile),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      )
           .timeout(const Duration(seconds: 12));
 
-      debugPrint('Profile sync response: ${response.statusCode} ${response.body}');
+      debugPrint(
+        'Profile sync response: ${response.statusCode} ${response.body}',
+      );
+
       if (response.statusCode >= 200 && response.statusCode < 300) {
         await db.markCurrentUserSynced();
       }
@@ -91,19 +94,22 @@ class SyncService {
     final deviceId = await getOrCreateDeviceId();
 
     final payload = {
-      'device_id': incidents.first['device_id'] ?? deviceId,
+      'device_id': deviceId,
       'incidents': incidents.map((incident) {
         return {
           'local_id': incident['id'],
+          'device_id': incident['device_id'] ?? deviceId,
           'created_at': incident['created_at'],
-          'lang': incident['lang'],
-          'input_text': incident['input_text'],
-          'predicted_category_code': incident['predicted_category_code'],
+          'occurred_at': incident['created_at'],
+          'lang': incident['lang'] ?? 'en',
+          'input_text': incident['input_text'] ?? '',
+          'predicted_category_code':
+          incident['predicted_category_code'] ?? incident['category_code'],
           'confidence': incident['confidence'],
-          'urgency': incident['urgency'],
+          'urgency': _normalizeUrgency(incident['urgency']?.toString()),
           'lat': incident['lat'],
           'lng': incident['lng'],
-          'location_source': incident['location_source'],
+          'location_source': incident['location_source'] ?? 'none',
           'notes': incident['notes'] ?? '',
         };
       }).toList(),
@@ -120,16 +126,24 @@ class SyncService {
 
       debugPrint('Sync response: ${response.statusCode} ${response.body}');
 
-      if (response.statusCode != 200) return;
+      if (response.statusCode < 200 || response.statusCode >= 300) return;
 
       final decoded = jsonDecode(response.body);
+
       if (decoded is! Map<String, dynamic>) return;
 
       final syncedList = decoded['synced'] ?? decoded['results'];
+
       if (syncedList is! List) return;
 
       for (final item in syncedList) {
         if (item is! Map) continue;
+
+        if (item['status'] != 'synced') {
+          debugPrint('Incident not synced: $item');
+          continue;
+        }
+
         final localId = _toInt(item['local_id']);
         final serverId = _toInt(item['server_id']);
 
@@ -139,6 +153,29 @@ class SyncService {
       }
     } catch (e) {
       debugPrint('Incident sync skipped: $e');
+    }
+  }
+
+  static String _normalizeUrgency(String? urgency) {
+    final value = urgency?.trim().toLowerCase();
+
+    switch (value) {
+      case 'low':
+        return 'low';
+
+      case 'med':
+      case 'medium':
+        return 'medium';
+
+      case 'high':
+        return 'high';
+
+      case 'critical':
+      case 'extreme':
+        return 'extreme';
+
+      default:
+        return 'medium';
     }
   }
 

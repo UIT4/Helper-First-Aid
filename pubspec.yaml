@@ -29,13 +29,15 @@ dependencies:
 dev_dependencies:
   flutter_launcher_icons: ^0.14.1
 
-flutter_icons:
+
+flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icons/app_icon.png"
+
+  image_path: "assets/icon/app_icon.png"
 
   adaptive_icon_background: "#2563EB"
-  adaptive_icon_foreground: "assets/icons/rescueiq_icon.png"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
 
 flutter:
   uses-material-design: true

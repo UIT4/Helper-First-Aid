@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/constants/app_theme.dart';
 import 'core/constants/theme_controller.dart';
 import 'core/language/app_language.dart';
-import 'features/splash/splash_screen.dart';
+import 'features/auth/login_screen.dart';
+import 'features/home/home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,11 +22,30 @@ Future<void> main() async {
   await AppLanguage.load();
   await ThemeController.load();
 
-  runApp(const RescueAssistant());
+  final prefs = await SharedPreferences.getInstance();
+
+  final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  final bool isGuest = prefs.getBool('isGuest') ?? false;
+  final String? userEmail = prefs.getString('userEmail');
+
+  final bool hasActiveSession =
+      isGuest ||
+          (isLoggedIn && userEmail != null && userEmail.trim().isNotEmpty);
+
+  runApp(
+    RescueAssistant(
+      hasActiveSession: hasActiveSession,
+    ),
+  );
 }
 
 class RescueAssistant extends StatelessWidget {
-  const RescueAssistant({super.key});
+  const RescueAssistant({
+    super.key,
+    required this.hasActiveSession,
+  });
+
+  final bool hasActiveSession;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +69,9 @@ class RescueAssistant extends StatelessWidget {
                 GlobalCupertinoLocalizations.delegate,
               ],
               theme: AppTheme.lightTheme(ThemeController.primaryColor),
-              home: const SplashScreen(),
+              home: hasActiveSession
+                  ? const HomeScreen()
+                  : const LoginScreen(),
             );
           },
         );
