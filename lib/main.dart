@@ -10,6 +10,7 @@ import 'core/constants/theme_controller.dart';
 import 'core/language/app_language.dart';
 import 'features/auth/login_screen.dart';
 import 'features/home/home_screen.dart';
+import 'features/onboarding/onboarding_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,14 +28,15 @@ Future<void> main() async {
   final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
   final bool isGuest = prefs.getBool('isGuest') ?? false;
   final String? userEmail = prefs.getString('userEmail');
+  final bool seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
 
   final bool hasActiveSession =
-      isGuest ||
-          (isLoggedIn && userEmail != null && userEmail.trim().isNotEmpty);
+      isGuest || (isLoggedIn && userEmail != null && userEmail.trim().isNotEmpty);
 
   runApp(
     RescueAssistant(
       hasActiveSession: hasActiveSession,
+      seenOnboarding: seenOnboarding,
     ),
   );
 }
@@ -43,9 +45,11 @@ class RescueAssistant extends StatelessWidget {
   const RescueAssistant({
     super.key,
     required this.hasActiveSession,
+    required this.seenOnboarding,
   });
 
   final bool hasActiveSession;
+  final bool seenOnboarding;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +75,9 @@ class RescueAssistant extends StatelessWidget {
               theme: AppTheme.lightTheme(ThemeController.primaryColor),
               home: hasActiveSession
                   ? const HomeScreen()
-                  : const LoginScreen(),
+                  : seenOnboarding
+                  ? const LoginScreen()
+                  : const OnboardingScreen(),
             );
           },
         );
