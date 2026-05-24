@@ -7,11 +7,12 @@ import '../constants/api_constants.dart';
 import '../database/app_database.dart';
 
 class ContentUpdateService {
-  static Future<void> checkForUpdate() async {
+  static Future<void> checkForUpdate({bool force = false}) async {
     final db = AppDatabase.instance;
 
     try {
       final localVersion = await db.getContentVersion();
+
       final response = await http
           .get(Uri.parse(ApiConstants.contentVersion))
           .timeout(const Duration(seconds: 8));
@@ -24,9 +25,11 @@ class ContentUpdateService {
       final serverVersion = _toInt(decoded['version']);
       if (serverVersion == null) return;
 
-      debugPrint('Content version | local: $localVersion | server: $serverVersion');
+      debugPrint(
+        'Content version | local: $localVersion | server: $serverVersion | force: $force',
+      );
 
-      if (serverVersion > localVersion) {
+      if (force || serverVersion > localVersion) {
         await _downloadAndReplaceContent(serverVersion);
       }
     } catch (e) {
@@ -60,8 +63,12 @@ class ContentUpdateService {
 
         for (final cat in categories) {
           if (cat is Map<String, dynamic>) {
+            final code = (cat['code'] ?? cat['CODE'] ?? '').toString();
+
+            if (code.trim().isEmpty) continue;
+
             await txn.insert(Tables.categories, {
-              'code': (cat['code'] ?? cat['CODE'] ?? '').toString(),
+              'code': code,
               'name_en': (cat['name_en'] ?? '').toString(),
               'name_ar': (cat['name_ar'] ?? '').toString(),
               'urgency_level': (cat['urgency_level'] ?? 'medium').toString(),
@@ -74,8 +81,12 @@ class ContentUpdateService {
 
         for (final step in steps) {
           if (step is Map<String, dynamic>) {
+            final categoryCode = (step['category_code'] ?? '').toString();
+
+            if (categoryCode.trim().isEmpty) continue;
+
             await txn.insert(Tables.guidanceSteps, {
-              'category_code': (step['category_code'] ?? '').toString(),
+              'category_code': categoryCode,
               'step_no': _toInt(step['step_no']) ?? 1,
               'title_en': (step['title_en'] ?? '').toString(),
               'title_ar': (step['title_ar'] ?? '').toString(),
@@ -84,8 +95,11 @@ class ContentUpdateService {
               'warning_en': (step['warning_en'] ?? '').toString(),
               'warning_ar': (step['warning_ar'] ?? '').toString(),
               'image_path': (step['image_path'] ?? '').toString(),
-              'image_asset': (step['image_asset'] ?? step['image_path'] ?? '').toString(),
-              'updated_at': (step['updated_at'] ?? DateTime.now().toIso8601String()).toString(),
+              'image_asset':
+              (step['image_asset'] ?? step['image_path'] ?? '').toString(),
+              'updated_at':
+              (step['updated_at'] ?? DateTime.now().toIso8601String())
+                  .toString(),
               'is_active': _toInt(step['is_active']) ?? 1,
             });
           }

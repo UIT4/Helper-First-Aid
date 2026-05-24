@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/constants/app_colors.dart';
 import '../../core/language/app_language.dart';
 import '../auth/login_screen.dart';
 
@@ -131,8 +131,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget build(BuildContext context) {
     final page = _pages[_currentIndex];
     final Color accent = page['color'] as Color;
-    final isLast = _currentIndex == _pages.length - 1;
-    final isAr = AppLanguage.isArabicContext(context);
+    final bool isLast = _currentIndex == _pages.length - 1;
+    final bool isAr = AppLanguage.isArabicContext(context);
 
     return Directionality(
       textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
@@ -142,43 +142,41 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           child: Column(
             children: [
               Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: accent.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.health_and_safety,
-                            color: accent,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppLanguage.text(
-                            context,
-                            'Rescue',
-                            'الإسعاف',
-                          ),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.health_and_safety,
+                        color: accent,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppLanguage.text(
+                        context,
+                        'Rescue',
+                        'الإسعاف',
+                      ),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFF0F172A),
+                      ),
                     ),
                   ],
                 ),
               ),
+
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
@@ -189,8 +187,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   },
                 ),
               ),
+
               Padding(
-                padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
                 child: Column(
                   children: [
                     Row(
@@ -212,72 +211,94 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
+
+                    const SizedBox(height: 24),
+
                     Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton(
-                            onPressed: _goToLogin,
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 58),
-                              side: BorderSide(color: accent),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
+                          child: SizedBox(
+                            height: 54,
+                            child: OutlinedButton(
+                              onPressed: _goToLogin,
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: accent),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              AppLanguage.text(context, 'Skip', 'تخطي'),
-                              style: TextStyle(
-                                color: accent,
-                                fontWeight: FontWeight.bold,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  AppLanguage.text(
+                                    context,
+                                    'Skip',
+                                    'تخطي',
+                                  ),
+                                  style: TextStyle(
+                                    color: accent,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+
+                        const SizedBox(width: 10),
+
                         Expanded(
                           child: SizedBox(
-                            height: 58,
+                            height: 54,
                             child: ElevatedButton(
                               onPressed: _goNext,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: accent,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    isLast
-                                        ? AppLanguage.text(
-                                      context,
-                                      'Start Now',
-                                      'ابدأ الآن',
-                                    )
-                                        : AppLanguage.text(
-                                      context,
-                                      'Next',
-                                      'التالي',
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      isLast
+                                          ? AppLanguage.text(
+                                        context,
+                                        'Start Now',
+                                        'ابدأ الآن',
+                                      )
+                                          : AppLanguage.text(
+                                        context,
+                                        'Next',
+                                        'التالي',
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                    style: TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.bold,
+
+                                    const SizedBox(width: 6),
+
+                                    Icon(
+                                      isLast
+                                          ? Icons.login_rounded
+                                          : isAr
+                                          ? Icons.arrow_back_rounded
+                                          : Icons.arrow_forward_rounded,
+                                      size: 18,
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    isLast
-                                        ? Icons.login_rounded
-                                        : isAr
-                                        ? Icons.arrow_back_rounded
-                                        : Icons.arrow_forward_rounded,
-                                    size: 20,
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -325,7 +346,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 color: accent,
               ),
             ),
+
             const SizedBox(height: 48),
+
             Text(
               AppLanguage.text(
                 context,
@@ -333,14 +356,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 page['titleAr'] as String,
               ),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF0F172A),
                 height: 1.2,
               ),
             ),
+
             const SizedBox(height: 20),
+
             Text(
               AppLanguage.text(
                 context,
@@ -348,7 +373,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 page['descAr'] as String,
               ),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 15,
                 color: Color(0xFF64748B),
                 height: 1.6,
