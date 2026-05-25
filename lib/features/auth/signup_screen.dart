@@ -502,6 +502,34 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+
+  Map<String, dynamic> _buildSignupProfilePayload(String fullName) {
+    final age = selectedDob == null ? null : _calculateAge(selectedDob!);
+    return {
+      'full_name': fullName,
+      'age': age,
+      'sex': selectedGender ?? '',
+      'blood_type': selectedBloodType ?? '',
+      'allergies': _buildAllergyGroupedValue(),
+      'conditions': _buildMultiGroupedValue(selectedCondition, selectedConditionDetails, conditionOtherCtrl, selectedConditionSubDetails),
+      'medications': _buildMultiGroupedValue(selectedMedication, selectedMedicationDetails, medicationOtherCtrl, selectedMedicationSubDetails),
+      'notes': notesCtrl.text.trim(),
+      'birth_date': dobCtrl.text.trim(),
+      'country': countryCtrl.text.trim(),
+    };
+  }
+
+  Map<String, dynamic> _buildSignupSettingsPayload() {
+    final countryInfo = _selectedCountryInfo();
+    return {
+      'country': countryInfo['en'] ?? countryCtrl.text.trim(),
+      'country_code': countryInfo['code'] ?? '+962',
+      'emergency_number': countryInfo['emergency'] ?? '911',
+      'ambulance_number': countryInfo['ambulance'] ?? '193',
+      'fire_number': countryInfo['fire'] ?? '199',
+    };
+  }
+
   Future<void> _finishSignup() async {
     if (isSaving) return;
     setState(() => isSaving = true);
@@ -522,11 +550,16 @@ class _SignupScreenState extends State<SignupScreen> {
         return;
       }
 
+      final signupProfilePayload = _buildSignupProfilePayload(fullName);
+      final signupSettingsPayload = _buildSignupSettingsPayload();
+
       final serverResult = await AuthService.register(
         fullName: fullName,
         email: email,
         phone: phone,
         password: password,
+        profile: signupProfilePayload,
+        settings: signupSettingsPayload,
       );
 
       if (serverResult.serverReached && !serverResult.ok) {
@@ -548,13 +581,14 @@ class _SignupScreenState extends State<SignupScreen> {
       await prefs.setBool('profileCompleted', true);
       await prefs.setString('userEmail', email);
       await prefs.setString('registeredName', fullName);
+      await prefs.setString('userPhone', phone);
+      await prefs.setString('registeredPhone', phone);
 
       await _saveMedicalInformation(fullName, email);
 
-      // Upload all saved signup/profile/settings data now when XAMPP is reachable.
-      // If offline, SyncService keeps local data and silently retries from Home/History later.
-      await SyncService.syncProfile();
-      await SyncService.syncIncidents();
+      // Upload all saved signup/profile/settings/incidents when XAMPP is reachable.
+      // If offline, data stays local and syncAll retries later.
+      await SyncService.syncAll();
 
       if (!mounted) return;
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));

@@ -22,6 +22,81 @@ class SyncService {
     return id;
   }
 
+  static Future<bool> isServerReachable() async {
+    try {
+      final response = await http
+          .get(Uri.parse(ApiConstants.contentVersion))
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode >= 200 && response.statusCode < 500;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> syncAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('isGuest') ?? false) return;
+
+    if (!await isServerReachable()) {
+      debugPrint('syncAll skipped: server unreachable');
+      return;
+    }
+
+    await syncUser();
+    await syncProfile();
+    await syncIncidents();
+  }
+
+  static Future<void> syncUser() async {
+    final db = AppDatabase.instance;
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('isGuest') ?? false) return;
+
+    final user = await db.getCurrentUserAccount();
+    if (user == null) return;
+
+    final deviceId = await getOrCreateDeviceId();
+    final payload = {
+      'device_id': deviceId,
+      'full_name': user['full_name'] ?? '',
+      'email': user['email'] ?? prefs.getString('userEmail') ?? '',
+      'phone': user['phone'] ?? prefs.getString('userPhone') ?? '',
+      'password': user['password'] ?? '',
+      'created_at': user['created_at'] ?? '',
+    };
+
+    try {
+      final response = await http
+          .post(
+        Uri.parse(ApiConstants.syncUser),
+        headers: const {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(payload),
+      )
+          .timeout(const Duration(seconds: 12));
+
+      debugPrint('User sync response: ${response.statusCode} ${response.body}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic> && decoded['success'] == true) {
+          final serverUser = decoded['user'];
+          if (serverUser is Map<String, dynamic>) {
+            await db.saveServerUserPayload(
+              Map<String, dynamic>.from(serverUser),
+              password: user['password']?.toString() ?? '',
+            );
+          }
+          await db.markCurrentUserSynced();
+        }
+      }
+    } catch (e) {
+      debugPrint('User sync skipped: $e');
+    }
+  }
+
   static Future<void> syncProfile() async {
     final db = AppDatabase.instance;
     final prefs = await SharedPreferences.getInstance();
@@ -41,6 +116,7 @@ class SyncService {
       'device_id': deviceId,
       'email': prefs.getString('userEmail') ?? user?['email'] ?? '',
       'full_name': profile?['full_name'] ?? user?['full_name'] ?? '',
+      'phone': user?['phone'] ?? prefs.getString('userPhone') ?? '',
       'password': user?['password'] ?? '',
       'account_created_at': user?['created_at'] ?? '',
       'age': profile?['age'],
@@ -50,6 +126,8 @@ class SyncService {
       'conditions': profile?['conditions'] ?? '',
       'medications': profile?['medications'] ?? '',
       'notes': profile?['notes'] ?? '',
+      'birth_date': prefs.getString('birthDate') ?? '',
+      'country': settings['country'] ?? prefs.getString('country') ?? 'Jordan',
       'language': settings['language'] ?? 'en',
       'country_code': settings['country_code'] ?? '+962',
       'emergency_number': settings['emergency_number'] ?? '911',
@@ -68,14 +146,15 @@ class SyncService {
       final response = await http
           .post(
         Uri.parse(ApiConstants.syncProfile),
-        headers: const {'Content-Type': 'application/json'},
+        headers: const {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode(payload),
       )
           .timeout(const Duration(seconds: 12));
 
-      debugPrint(
-        'Profile sync response: ${response.statusCode} ${response.body}',
-      );
+      debugPrint('Profile sync response: ${response.statusCode} ${response.body}');
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         await db.markCurrentUserSynced();
@@ -119,21 +198,22 @@ class SyncService {
       final response = await http
           .post(
         Uri.parse(ApiConstants.syncIncidents),
-        headers: const {'Content-Type': 'application/json'},
+        headers: const {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode(payload),
       )
           .timeout(const Duration(seconds: 12));
 
-      debugPrint('Sync response: ${response.statusCode} ${response.body}');
+      debugPrint('Incident sync response: ${response.statusCode} ${response.body}');
 
       if (response.statusCode < 200 || response.statusCode >= 300) return;
 
       final decoded = jsonDecode(response.body);
-
       if (decoded is! Map<String, dynamic>) return;
 
       final syncedList = decoded['synced'] ?? decoded['results'];
-
       if (syncedList is! List) return;
 
       for (final item in syncedList) {
@@ -162,18 +242,14 @@ class SyncService {
     switch (value) {
       case 'low':
         return 'low';
-
       case 'med':
       case 'medium':
         return 'medium';
-
       case 'high':
         return 'high';
-
       case 'critical':
       case 'extreme':
         return 'extreme';
-
       default:
         return 'medium';
     }

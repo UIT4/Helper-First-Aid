@@ -29,7 +29,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 11,
+      version: 12,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -95,6 +95,7 @@ class AppDatabase {
         conditions TEXT,
         medications TEXT,
         notes TEXT,
+        pending_sync INTEGER DEFAULT 1,
         updated_at TEXT
       )
     ''');
@@ -261,6 +262,14 @@ class AppDatabase {
         db,
         Tables.users,
         "phone TEXT DEFAULT ''",
+      );
+    }
+
+    if (oldVersion < 12) {
+      await _safeAddColumn(
+        db,
+        Tables.patient,
+        'pending_sync INTEGER DEFAULT 1',
       );
     }
   }
@@ -898,4 +907,123 @@ class AppDatabase {
     await db.close();
     _database = null;
   }
+
+
+  Future<void> saveServerUserPayload(
+      Map<String, dynamic> user, {
+        required String password,
+      }) async {
+    final email = (user['email'] ?? '').toString().trim().toLowerCase();
+    if (email.isEmpty) return;
+
+    final phone = _normalizePhone((user['phone'] ?? '').toString());
+    final fullName = (user['full_name'] ?? user['name'] ?? '').toString().trim();
+
+    await insertOrUpdateUser(
+      fullName: fullName,
+      email: email,
+      phone: phone,
+      password: password,
+      pendingSync: 0,
+    );
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isGuest', false);
+    await prefs.setBool('isLoggedIn', true);
+    await prefs.setString('userEmail', email);
+    await prefs.setString('registeredName', fullName);
+    if (phone.isNotEmpty) {
+      await prefs.setString('userPhone', phone);
+      await prefs.setString('registeredPhone', phone);
+    }
+
+    final birthDate = (user['birth_date'] ?? user['dob'] ?? '').toString().trim();
+    if (birthDate.isNotEmpty) await prefs.setString('birthDate', birthDate);
+
+    final country = (user['country'] ?? '').toString().trim();
+    if (country.isNotEmpty) await prefs.setString('country', country);
+
+    final settings = await getSettings();
+    await saveSettings({
+      ...settings,
+      'language': (user['language'] ?? settings['language'] ?? 'en').toString(),
+      'country': country.isNotEmpty ? country : (settings['country'] ?? 'Jordan'),
+      'country_code': (user['country_code'] ?? settings['country_code'] ?? '+962').toString(),
+      'emergency_number': (user['emergency_number'] ?? settings['emergency_number'] ?? '911').toString(),
+      'ambulance_number': (user['ambulance_number'] ?? settings['ambulance_number'] ?? '193').toString(),
+      'fire_number': (user['fire_number'] ?? settings['fire_number'] ?? '199').toString(),
+    });
+
+    final profile = <String, dynamic>{
+      'full_name': fullName,
+      'age': _toNullableInt(user['age']),
+      'sex': (user['sex'] ?? '').toString(),
+      'blood_type': (user['blood_type'] ?? '').toString(),
+      'allergies': (user['allergies'] ?? '').toString(),
+      'conditions': (user['conditions'] ?? '').toString(),
+      'medications': (user['medications'] ?? '').toString(),
+      'notes': (user['notes'] ?? '').toString(),
+      'pending_sync': 0,
+    };
+
+    await saveProfileForEmail(email: email, profile: profile, pendingSync: 0);
+    await markUserSynced(email);
+  }
+
+  Future<void> saveProfileForEmail({
+    required String email,
+    required Map<String, dynamic> profile,
+    int pendingSync = 1,
+  }) async {
+    final db = await database;
+    final normalizedEmail = email.trim().toLowerCase();
+
+    await db.delete(
+      Tables.patient,
+      where: 'user_email = ?',
+      whereArgs: [normalizedEmail],
+    );
+
+    await db.insert(Tables.patient, {
+      ...profile,
+      'user_email': normalizedEmail,
+      'pending_sync': pendingSync,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getUnsyncedUsers() async {
+    final db = await database;
+    return db.query(
+      Tables.users,
+      where: 'pending_sync = ?',
+      whereArgs: [1],
+    );
+  }
+
+  static String _normalizePhone(String rawPhone) {
+    var phone = rawPhone.trim();
+    phone = phone.replaceAll(' ', '');
+    phone = phone.replaceAll('-', '');
+    phone = phone.replaceAll('(', '');
+    phone = phone.replaceAll(')', '');
+
+    if (phone.startsWith('+962')) {
+      phone = '0${phone.substring(4)}';
+    } else if (phone.startsWith('00962')) {
+      phone = '0${phone.substring(5)}';
+    } else if (phone.startsWith('962')) {
+      phone = '0${phone.substring(3)}';
+    }
+
+    return phone;
+  }
+
+  static int? _toNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
+  }
+
 }

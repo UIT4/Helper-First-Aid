@@ -31,7 +31,7 @@ class AuthService {
       final response = await http
           .post(
         Uri.parse(ApiConstants.authLogin),
-        headers: {
+        headers: const {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
@@ -80,25 +80,31 @@ class AuthService {
     required String email,
     required String phone,
     required String password,
+    Map<String, dynamic>? profile,
+    Map<String, dynamic>? settings,
   }) async {
     try {
       final deviceId = await SyncService.getOrCreateDeviceId();
       final cleanPhone = _normalizeJordanPhone(phone);
 
+      final body = <String, dynamic>{
+        'full_name': fullName.trim(),
+        'email': email.trim().toLowerCase(),
+        'phone': cleanPhone,
+        'password': password.trim(),
+        'device_id': deviceId,
+        if (profile != null) ...profile,
+        if (settings != null) ...settings,
+      };
+
       final response = await http
           .post(
         Uri.parse(ApiConstants.authRegister),
-        headers: {
+        headers: const {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({
-          'full_name': fullName.trim(),
-          'email': email.trim().toLowerCase(),
-          'phone': cleanPhone,
-          'password': password.trim(),
-          'device_id': deviceId,
-        }),
+        body: jsonEncode(body),
       )
           .timeout(const Duration(seconds: 12));
 

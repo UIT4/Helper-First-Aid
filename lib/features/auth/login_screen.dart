@@ -72,8 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _startBackgroundSync() {
     Future.microtask(() async {
       try {
-        await SyncService.syncProfile();
-        await SyncService.syncIncidents();
+        await SyncService.syncAll();
       } catch (e) {
         debugPrint('Background sync skipped: $e');
       }
@@ -156,12 +155,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final serverUser = serverResult.user ?? {};
       final phone = (serverUser['phone'] ?? '').toString();
 
-      await AppDatabase.instance.insertOrUpdateUser(
-        fullName: (serverUser['full_name'] ?? serverUser['name'] ?? '').toString(),
-        email: (serverUser['email'] ?? email).toString(),
-        phone: phone,
+      await AppDatabase.instance.saveServerUserPayload(
+        serverUser,
         password: password,
-        pendingSync: 0,
       );
 
       await _saveLoginSession(
