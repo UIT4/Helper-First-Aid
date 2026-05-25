@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/database/app_database.dart';
@@ -247,12 +248,15 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     final imageKey = await _imageStorageKey();
 
     _email = prefs.getString('userEmail') ?? '—';
-    _phone = prefs.getString('userPhone') ??
+    final savedPhone = prefs.getString('userPhone') ??
         prefs.getString('registeredPhone') ??
         prefs.getString('phone') ??
         prefs.getString('phoneNumber') ??
-        '—';
-    _phoneController.text = _phone == '—' ? '' : _phone;
+        '';
+
+    final normalizedPhone = _normalizePhone(savedPhone);
+    _phone = normalizedPhone.isEmpty ? '—' : normalizedPhone;
+    _phoneController.text = normalizedPhone;
     _birthDate = prefs.getString('birthDate') ?? '—';
     _country = prefs.getString('country') ?? '—';
     _imagePath = prefs.getString(imageKey);
@@ -476,10 +480,13 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     });
 
     final prefs = await SharedPreferences.getInstance();
+    final normalizedPhone = _normalizePhone(_phoneController.text);
+
     await prefs.setString('registeredName', _nameController.text.trim());
-    await prefs.setString('userPhone', _phoneController.text.trim());
-    await prefs.setString('registeredPhone', _phoneController.text.trim());
-    _phone = _phoneController.text.trim().isEmpty ? '—' : _phoneController.text.trim();
+    await prefs.setString('userPhone', normalizedPhone);
+    await prefs.setString('registeredPhone', normalizedPhone);
+    _phone = normalizedPhone.isEmpty ? '—' : normalizedPhone;
+    _phoneController.text = normalizedPhone;
 
     if (!mounted) return;
 
@@ -578,6 +585,11 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   String _clean(String? value) {
     final v = value?.trim() ?? '';
     return v.isEmpty ? '—' : v;
+  }
+
+  String _normalizePhone(String? value) {
+    final digits = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+    return digits.length > 10 ? digits.substring(0, 10) : digits;
   }
 
   bool _validImageFile() {
@@ -725,6 +737,10 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             controller: _phoneController,
             icon: Icons.phone_rounded,
             keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
           ),
           _buildTextField(
             label: AppLanguage.text(context, 'Age', 'العمر'),
@@ -1373,6 +1389,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -1380,6 +1397,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
+        inputFormatters: inputFormatters,
         cursorColor: primary,
         decoration: InputDecoration(
           labelText: label,
