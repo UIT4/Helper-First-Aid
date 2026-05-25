@@ -1,7 +1,7 @@
 class ApiConstants {
 
   static const String baseUrl =
-      'http://192.168.100.10/HELPER-FIRST-AID-PHP-DASHBOARD-/api';
+      'http://192.168.100.10/HELPER-FIRST-AID-PHP-DASHBOARD-/api/content_version.php';
 
   // AUTH
   static const String authLogin =
