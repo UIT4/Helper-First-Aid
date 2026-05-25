@@ -46,15 +46,9 @@ class AuthService {
       debugPrint('LOGIN STATUS: ${response.statusCode}');
       debugPrint('LOGIN BODY: ${response.body}');
 
-      Map<String, dynamic> decoded = {};
-
-      try {
-        final parsed = jsonDecode(response.body);
-        if (parsed is Map<String, dynamic>) {
-          decoded = parsed;
-        }
-      } catch (_) {
-        return AuthResult(
+      final decoded = _decodeJson(response.body);
+      if (decoded == null) {
+        return const AuthResult(
           serverReached: true,
           ok: false,
           message: 'Invalid JSON response from server',
@@ -63,7 +57,6 @@ class AuthService {
 
       final success = decoded['success'] == true;
 
-      ok: response.statusCode == 200 && success;
       return AuthResult(
         serverReached: true,
         ok: response.statusCode == 200 && success,
@@ -74,7 +67,6 @@ class AuthService {
       );
     } catch (e) {
       debugPrint('LOGIN ERROR: $e');
-
       return const AuthResult(
         serverReached: false,
         ok: false,
@@ -91,6 +83,7 @@ class AuthService {
   }) async {
     try {
       final deviceId = await SyncService.getOrCreateDeviceId();
+      final cleanPhone = _normalizeJordanPhone(phone);
 
       final response = await http
           .post(
@@ -102,7 +95,7 @@ class AuthService {
         body: jsonEncode({
           'full_name': fullName.trim(),
           'email': email.trim().toLowerCase(),
-          'phone': phone.trim(),
+          'phone': cleanPhone,
           'password': password.trim(),
           'device_id': deviceId,
         }),
@@ -112,15 +105,9 @@ class AuthService {
       debugPrint('REGISTER STATUS: ${response.statusCode}');
       debugPrint('REGISTER BODY: ${response.body}');
 
-      Map<String, dynamic> decoded = {};
-
-      try {
-        final parsed = jsonDecode(response.body);
-        if (parsed is Map<String, dynamic>) {
-          decoded = parsed;
-        }
-      } catch (_) {
-        return AuthResult(
+      final decoded = _decodeJson(response.body);
+      if (decoded == null) {
+        return const AuthResult(
           serverReached: true,
           ok: false,
           message: 'Invalid JSON response from server',
@@ -128,13 +115,10 @@ class AuthService {
       }
 
       final success = decoded['success'] == true;
-      ok: response.statusCode == 200 && success;
 
       return AuthResult(
         serverReached: true,
-        ok: response.statusCode >= 200 &&
-            response.statusCode < 300 &&
-            success,
+        ok: response.statusCode >= 200 && response.statusCode < 300 && success,
         message: decoded['message']?.toString() ?? '',
         user: decoded['user'] is Map<String, dynamic>
             ? Map<String, dynamic>.from(decoded['user'])
@@ -142,12 +126,39 @@ class AuthService {
       );
     } catch (e) {
       debugPrint('REGISTER ERROR: $e');
-
       return const AuthResult(
         serverReached: false,
         ok: false,
         message: 'Server unreachable',
       );
     }
+  }
+
+  static Map<String, dynamic>? _decodeJson(String body) {
+    try {
+      final parsed = jsonDecode(body);
+      if (parsed is Map<String, dynamic>) return parsed;
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String _normalizeJordanPhone(String rawPhone) {
+    var phone = rawPhone.trim();
+    phone = phone.replaceAll(' ', '');
+    phone = phone.replaceAll('-', '');
+    phone = phone.replaceAll('(', '');
+    phone = phone.replaceAll(')', '');
+
+    if (phone.startsWith('+962')) {
+      phone = '0${phone.substring(4)}';
+    } else if (phone.startsWith('00962')) {
+      phone = '0${phone.substring(5)}';
+    } else if (phone.startsWith('962')) {
+      phone = '0${phone.substring(3)}';
+    }
+
+    return phone;
   }
 }
