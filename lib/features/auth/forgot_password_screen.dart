@@ -463,35 +463,80 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  Widget _inputField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    bool obscure = false,
-    bool enabled = true,
-    TextInputType keyboard = TextInputType.text,
-    List<TextInputFormatter>? inputFormatters,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscure,
-      enabled: enabled,
-      keyboardType: keyboard,
-      textDirection: TextDirection.ltr,
-      inputFormatters: inputFormatters,
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: Icon(icon, color: primary),
-        filled: true,
-        fillColor: const Color(0xFFF1F5F9),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+Widget _inputField({
+  required TextEditingController controller,
+  required String hint,
+  required IconData icon,
+  bool obscure = false,
+  bool enabled = true,
+  TextInputType keyboard = TextInputType.text,
+  List<TextInputFormatter>? inputFormatters,
+}) {
+  final ValueNotifier<bool> obscureNotifier =
+      ValueNotifier<bool>(obscure);
+
+  return ValueListenableBuilder<bool>(
+    valueListenable: obscureNotifier,
+    builder: (context, hidden, _) {
+      return TextField(
+        controller: controller,
+        obscureText: hidden,
+        enabled: enabled,
+        keyboardType: keyboard,
+        textDirection: TextDirection.ltr,
+        inputFormatters: inputFormatters,
+        decoration: InputDecoration(
+          hintText: hint,
+
+          prefixIcon: Icon(
+            icon,
+            color: primary,
+          ),
+
+          suffixIcon: obscure
+              ? IconButton(
+                  onPressed: () {
+                    obscureNotifier.value = !hidden;
+                  },
+                  icon: Icon(
+                    hidden
+                        ? Icons.visibility_off_rounded
+                        : Icons.visibility_rounded,
+                    color: primary,
+                  ),
+                )
+              : null,
+
+          filled: true,
+          fillColor: const Color(0xFFF1F5F9),
+
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: primary.withValues(alpha: 0.35),
+              width: 1.4,
+            ),
+          ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
   Widget _button({
     required String text,
