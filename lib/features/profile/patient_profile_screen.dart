@@ -18,6 +18,7 @@ class PatientProfileScreen extends StatefulWidget {
 class _PatientProfileScreenState extends State<PatientProfileScreen> {
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
 
   String _selectedSex = 'Male';
@@ -38,6 +39,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   String _birthDate = '—';
   String _country = '—';
   String _email = '—';
+  String _phone = '—';
   String? _imagePath;
 
   bool _isLoading = true;
@@ -228,6 +230,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _ageController.dispose();
+    _phoneController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -244,6 +247,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     final imageKey = await _imageStorageKey();
 
     _email = prefs.getString('userEmail') ?? '—';
+    _phone = prefs.getString('userPhone') ??
+        prefs.getString('registeredPhone') ??
+        prefs.getString('phone') ??
+        prefs.getString('phoneNumber') ??
+        '—';
+    _phoneController.text = _phone == '—' ? '' : _phone;
     _birthDate = prefs.getString('birthDate') ?? '—';
     _country = prefs.getString('country') ?? '—';
     _imagePath = prefs.getString(imageKey);
@@ -468,6 +477,9 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('registeredName', _nameController.text.trim());
+    await prefs.setString('userPhone', _phoneController.text.trim());
+    await prefs.setString('registeredPhone', _phoneController.text.trim());
+    _phone = _phoneController.text.trim().isEmpty ? '—' : _phoneController.text.trim();
 
     if (!mounted) return;
 
@@ -707,6 +719,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             label: AppLanguage.text(context, 'Full Name', 'الاسم الكامل'),
             controller: _nameController,
             icon: Icons.person_rounded,
+          ),
+          _buildTextField(
+            label: AppLanguage.text(context, 'Phone Number', 'رقم الهاتف'),
+            controller: _phoneController,
+            icon: Icons.phone_rounded,
+            keyboardType: TextInputType.phone,
           ),
           _buildTextField(
             label: AppLanguage.text(context, 'Age', 'العمر'),
@@ -1265,6 +1283,11 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             icon: Icons.public_rounded,
             title: AppLanguage.text(context, 'Country', 'الدولة'),
             value: _clean(_country),
+          ),
+          _infoRow(
+            icon: Icons.phone_rounded,
+            title: AppLanguage.text(context, 'Phone Number', 'رقم الهاتف'),
+            value: _clean(_phoneController.text),
           ),
           _infoRow(
             icon: Icons.cake_rounded,

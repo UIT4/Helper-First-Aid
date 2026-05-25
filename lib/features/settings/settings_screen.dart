@@ -19,6 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _fireCtrl = TextEditingController();
 
   String _language = 'auto';
+  String _country = 'Jordan';
 
   bool _largeText = false;
   bool _isLoading = true;
@@ -62,12 +63,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final savedLang = settings['language'] ?? globalLang;
         _language = ['en', 'ar', 'auto'].contains(savedLang) ? savedLang : 'auto';
 
-        _emergencyCtrl.text = settings['emergency_number'] ?? '911';
-        _ambulanceCtrl.text = settings['ambulance_number'] ?? '193';
-        _fireCtrl.text = settings['fire_number'] ?? '199';
+        _country = prefs.getString('country') ?? 'Jordan';
 
         _largeText = (settings['large_text'] ?? 0) == 1;
         _isGuest = prefs.getBool('isGuest') ?? false;
+
+        _applyEmergencyNumbersByCountry(_country);
+
         _isLoading = false;
       });
     } catch (_) {
@@ -82,6 +84,116 @@ class _SettingsScreenState extends State<SettingsScreen> {
         isError: true,
       );
     }
+  }
+
+  void _applyEmergencyNumbersByCountry(String country) {
+    final c = country.toLowerCase().trim();
+
+    if (c.contains('jordan') || c.contains('الأردن') || c.contains('اردن')) {
+      _emergencyCtrl.text = '911';
+      _ambulanceCtrl.text = '193';
+      _fireCtrl.text = '199';
+      return;
+    }
+
+    if (c.contains('egypt') || c.contains('مصر')) {
+      _emergencyCtrl.text = '122';
+      _ambulanceCtrl.text = '123';
+      _fireCtrl.text = '180';
+      return;
+    }
+
+    if (c.contains('saudi') || c.contains('ksa') || c.contains('السعودية')) {
+      _emergencyCtrl.text = '911';
+      _ambulanceCtrl.text = '997';
+      _fireCtrl.text = '998';
+      return;
+    }
+
+    if (c.contains('uae') ||
+        c.contains('emirates') ||
+        c.contains('الإمارات') ||
+        c.contains('امارات')) {
+      _emergencyCtrl.text = '999';
+      _ambulanceCtrl.text = '998';
+      _fireCtrl.text = '997';
+      return;
+    }
+
+    if (c.contains('palestine') || c.contains('فلسطين')) {
+      _emergencyCtrl.text = '100';
+      _ambulanceCtrl.text = '101';
+      _fireCtrl.text = '102';
+      return;
+    }
+
+    if (c.contains('lebanon') || c.contains('لبنان')) {
+      _emergencyCtrl.text = '112';
+      _ambulanceCtrl.text = '140';
+      _fireCtrl.text = '175';
+      return;
+    }
+
+    if (c.contains('iraq') || c.contains('العراق') || c.contains('عراق')) {
+      _emergencyCtrl.text = '104';
+      _ambulanceCtrl.text = '122';
+      _fireCtrl.text = '115';
+      return;
+    }
+
+    if (c.contains('qatar') || c.contains('قطر')) {
+      _emergencyCtrl.text = '999';
+      _ambulanceCtrl.text = '999';
+      _fireCtrl.text = '999';
+      return;
+    }
+
+    if (c.contains('kuwait') || c.contains('الكويت') || c.contains('كويت')) {
+      _emergencyCtrl.text = '112';
+      _ambulanceCtrl.text = '112';
+      _fireCtrl.text = '112';
+      return;
+    }
+
+    if (c.contains('bahrain') || c.contains('البحرين') || c.contains('بحرين')) {
+      _emergencyCtrl.text = '999';
+      _ambulanceCtrl.text = '999';
+      _fireCtrl.text = '999';
+      return;
+    }
+
+    if (c.contains('oman') || c.contains('عمان') || c.contains('سلطنة')) {
+      _emergencyCtrl.text = '9999';
+      _ambulanceCtrl.text = '9999';
+      _fireCtrl.text = '9999';
+      return;
+    }
+
+    if (c.contains('syria') || c.contains('سوريا')) {
+      _emergencyCtrl.text = '112';
+      _ambulanceCtrl.text = '110';
+      _fireCtrl.text = '113';
+      return;
+    }
+
+    // Default fallback
+    _emergencyCtrl.text = '911';
+    _ambulanceCtrl.text = '193';
+    _fireCtrl.text = '199';
+  }
+
+  Future<void> _applyCountryNumbersNow() async {
+    setState(() {
+      _applyEmergencyNumbersByCountry(_country);
+    });
+
+    _showSnackbar(
+      AppLanguage.text(
+        context,
+        'Emergency numbers updated for your country',
+        'تم تحديث أرقام الطوارئ حسب الدولة',
+      ),
+    );
   }
 
   Future<void> _saveSettings() async {
@@ -125,6 +237,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _exitGuestMode() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setBool('isLoggedIn', false);
+    await prefs.setBool('isGuest', false);
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+    );
+  }
+
   Future<void> _logout() async {
     final isAr = AppLanguage.isArabicContext(context);
 
@@ -152,50 +279,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           content: Text(message),
-          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16), // مساحات داخلية متناسقة للأزرار
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF1F5F9), // لون رمادي فاتح متناسق مع النوافذ المنبثقة
-                      foregroundColor: textMuted,
-                      elevation: 0,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: const BorderSide(color: Color(0xFFCBD5E1)), // حدود خفيفة لتحديد الزر
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () => Navigator.pop(context, false),
                     child: Text(
                       AppLanguage.text(context, 'Cancel', 'إلغاء'),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: danger,
-                      elevation: 0,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _isGuest
+                            ? AppLanguage.text(context, 'Exit', 'خروج')
+                            : AppLanguage.text(context, 'Logout', 'خروج'),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -208,6 +329,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirm != true) return;
+
+    if (_isGuest) {
+      await _exitGuestMode();
+      return;
+    }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', false);
@@ -354,6 +480,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildCountryNumbersCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _iconBox(Icons.public_rounded, AppColors.primary),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  AppLanguage.text(
+                    context,
+                    'Detected country: $_country',
+                    'الدولة المحددة: $_country',
+                  ),
+                  style: TextStyle(
+                    fontSize: _titleSize,
+                    fontWeight: FontWeight.bold,
+                    color: textDark,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            AppLanguage.text(
+              context,
+              'Emergency, ambulance, and fire numbers are filled automatically based on the country selected during signup/onboarding.',
+              'يتم تعبئة أرقام الطوارئ والإسعاف والإطفاء تلقائياً حسب الدولة المختارة عند التسجيل أو الاستبيان.',
+            ),
+            style: TextStyle(
+              fontSize: _bodySize,
+              color: textMuted,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _applyCountryNumbersNow,
+              icon: Icon(Icons.refresh_rounded, color: AppColors.primary),
+              label: Text(
+                AppLanguage.text(
+                  context,
+                  'Apply Country Numbers',
+                  'تطبيق أرقام الدولة',
+                ),
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildThemeSelector() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -449,13 +646,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         onPressed: _logout,
         icon: const Icon(Icons.logout, color: danger),
-        label: Text(
-          AppLanguage.text(
-            context,
-            _isGuest ? 'Exit Guest Mode' : 'Logout',
-            _isGuest ? 'الخروج من وضع الضيف' : 'تسجيل الخروج',
+        label: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            AppLanguage.text(
+              context,
+              _isGuest ? 'Exit Guest Mode' : 'Logout',
+              _isGuest ? 'الخروج من وضع الضيف' : 'تسجيل الخروج',
+            ),
+            style: const TextStyle(color: danger, fontWeight: FontWeight.bold, fontSize: 16),
           ),
-          style: const TextStyle(color: danger, fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),
     );
@@ -531,9 +731,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Expanded(
             child: TextField(
               controller: controller,
+              readOnly: true,
+              enableInteractiveSelection: false,
               keyboardType: TextInputType.phone,
               textAlign: AppLanguage.isArabicContext(context) ? TextAlign.right : TextAlign.left,
-              style: TextStyle(fontSize: _titleSize, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: _titleSize, fontWeight: FontWeight.w600, color: textDark),
               decoration: InputDecoration(
                 labelText: label,
                 hintText: hint,

@@ -4,8 +4,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import '../../core/constants/app_colors.dart';
 
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/database/app_database.dart';
 import '../../core/language/app_language.dart';
 
@@ -27,6 +28,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool isLoading = false;
 
   String generatedOtp = '';
+  String normalizedPhone = '';
 
   static Color get primary => AppColors.primary;
   static const Color danger = Color(0xFFDC2626);
@@ -49,6 +51,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return (1000 + random.nextInt(9000)).toString();
   }
 
+  String _normalizeJordanPhone(String rawPhone) {
+    String phone = rawPhone.trim();
+
+    phone = phone.replaceAll(' ', '');
+    phone = phone.replaceAll('-', '');
+    phone = phone.replaceAll('(', '');
+    phone = phone.replaceAll(')', '');
+
+    if (phone.startsWith('+962')) {
+      phone = '0${phone.substring(4)}';
+    } else if (phone.startsWith('00962')) {
+      phone = '0${phone.substring(5)}';
+    } else if (phone.startsWith('962')) {
+      phone = '0${phone.substring(3)}';
+    }
+
+    return phone;
+  }
+
+  bool _isValidJordanPhone(String phone) {
+    return RegExp(r'^07[789]\d{7}$').hasMatch(phone);
+  }
+
   bool _isValidPassword(String password) {
     return RegExp(
       r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$',
@@ -56,9 +81,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _showSnack(
-    String msg, {
-    bool error = false,
-  }) {
+      String msg, {
+        bool error = false,
+      }) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -72,9 +97,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       ),
     );
   }
-  
+
   Future<void> _sendCode() async {
-    final phone = _phoneCtrl.text.trim();
+    final phone = _normalizeJordanPhone(_phoneCtrl.text);
 
     if (phone.isEmpty) {
       _showSnack(
@@ -88,12 +113,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
-    if (phone.length != 10 || !RegExp(r'^[0-9]+$').hasMatch(phone)) {
+    if (!_isValidJordanPhone(phone)) {
       _showSnack(
         AppLanguage.text(
           context,
-          'Phone number must be exactly 10 digits',
-          'يجب أن يتكون رقم الهاتف من 10 أرقام تماماً',
+          'Enter a valid Jordanian phone number',
+          'أدخل رقم هاتف أردني صحيح',
         ),
         error: true,
       );
@@ -110,30 +135,60 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           AppLanguage.text(
             context,
             'No account found with this phone number',
-            'لا يوجد حساب مسجل برقم الهاتف هذا',
+            'لا يوجد حساب مرتبط بهذا الرقم',
           ),
           error: true,
         );
-        setState(() => isLoading = false);
+
+        if (mounted) {
+          setState(() => isLoading = false);
+        }
         return;
       }
 
       generatedOtp = _generateOtp();
+      normalizedPhone = phone;
 
-      // 💡 تعديل الـ IP هنا ضروري ليفهم المحاكي السيرفر الخاص بك
-      // استخدم '10.0.2.2' لمحاكي الأندرويد الافتراضي بدلاً من localhost
-      final url = Uri.parse('http://10.0.2.2/rescue_assistant_api/send_otp.php'); 
-      
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
+      final response = await http
+          .post(
+        Uri.parse('${ApiConstants.baseUrl}/send_otp.php'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode({
           'phone': phone,
           'otp': generatedOtp,
         }),
-      );
+      )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
+        bool ok = true;
+
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) {
+            ok = decoded['success'] == true ||
+                decoded['status'] == 'success' ||
+                decoded['ok'] == true;
+          }
+        } catch (_) {
+          ok = true;
+        }
+
+        if (!ok) {
+          _showSnack(
+            AppLanguage.text(
+              context,
+              'Server rejected OTP request',
+              'السيرفر رفض طلب رمز التحقق',
+            ),
+            error: true,
+          );
+          return;
+        }
+
         setState(() {
           codeSent = true;
           verified = false;
@@ -143,35 +198,36 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _showSnack(
           AppLanguage.text(
             context,
-            'Verification code sent successfully to server',
-            'تم إرسال رمز التحقق إلى السيرفر بنجاح',
+            'OTP sent successfully',
+            'تم إرسال رمز التحقق بنجاح',
           ),
         );
       } else {
         _showSnack(
           AppLanguage.text(
             context,
-            'Server error (${response.statusCode}), failed to send code',
-            'فشل السيرفر في استقبال الكود - خطأ رقم ${response.statusCode}',
+            'Server error: failed to send OTP',
+            'خطأ من السيرفر: فشل إرسال رمز التحقق',
           ),
           error: true,
         );
       }
-    } catch (e) {
-      // في حال وجود مشكلة حقيقية بالاتصال تظهر لك هنا لتفحصها
+    } catch (_) {
       _showSnack(
         AppLanguage.text(
           context,
-          'Connection Error: Cannot connect to server',
-          'خطأ في الاتصال: لا يمكن الوصول للسيرفر حالياً',
+          'Cannot connect to server. Check XAMPP/IP/API path.',
+          'لا يمكن الاتصال بالسيرفر. تأكد من XAMPP/IP ومسار API.',
         ),
         error: true,
       );
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
-  
+
   void _verifyCode() {
     final enteredOtp = _otpCtrl.text.trim();
 
@@ -252,8 +308,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
+    final phone = normalizedPhone.isNotEmpty
+        ? normalizedPhone
+        : _normalizeJordanPhone(_phoneCtrl.text);
+
     final updated = await AppDatabase.instance.updateUserPassword(
-      phone: _phoneCtrl.text.trim(),
+      phone: phone,
       newPassword: newPass,
     );
 
@@ -297,7 +357,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               'Forgot Password',
               'نسيت كلمة المرور',
             ),
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           backgroundColor: primary,
           iconTheme: const IconThemeData(color: Colors.white),
@@ -337,7 +400,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       'إعادة تعيين كلمة المرور',
                     ),
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 24,
                       color: textDark,
                       fontWeight: FontWeight.bold,
@@ -362,15 +425,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     controller: _phoneCtrl,
                     hint: AppLanguage.text(
                       context,
-                      'Phone Number (10 digits)',
-                      'رقم الهاتف (10 أرقام)',
+                      'Phone Number',
+                      'رقم الهاتف',
                     ),
                     icon: Icons.phone_android_rounded,
                     keyboard: TextInputType.phone,
                     enabled: !codeSent,
                     inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(10),
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'[0-9+\-\s()]'),
+                      ),
+                      LengthLimitingTextInputFormatter(16),
                     ],
                   ),
                   const SizedBox(height: 18),
@@ -513,20 +578,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         child: isLoading
             ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.5,
-                ),
-              )
+          height: 24,
+          width: 24,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2.5,
+          ),
+        )
             : Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          text,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
