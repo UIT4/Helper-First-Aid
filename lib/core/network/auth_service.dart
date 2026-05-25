@@ -63,6 +63,7 @@ class AuthService {
 
       final success = decoded['success'] == true;
 
+      ok: response.statusCode == 200 && success;
       return AuthResult(
         serverReached: true,
         ok: response.statusCode == 200 && success,
@@ -127,6 +128,7 @@ class AuthService {
       }
 
       final success = decoded['success'] == true;
+      ok: response.statusCode == 200 && success;
 
       return AuthResult(
         serverReached: true,
