@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,7 +26,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool verified = false;
   bool isLoading = false;
 
-  String generatedOtp = '';
   String normalizedPhone = '';
 
   static Color get primary => AppColors.primary;
@@ -46,14 +44,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  String _generateOtp() {
-    final random = Random();
-    return (1000 + random.nextInt(9000)).toString();
-  }
-
   String _normalizeJordanPhone(String rawPhone) {
     String phone = rawPhone.trim();
-
     phone = phone.replaceAll(' ', '');
     phone = phone.replaceAll('-', '');
     phone = phone.replaceAll('(', '');
@@ -80,10 +72,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     ).hasMatch(password);
   }
 
-  void _showSnack(
-      String msg, {
-        bool error = false,
-      }) {
+  void _showSnack(String msg, {bool error = false}) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -91,11 +80,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         content: Text(msg),
         backgroundColor: error ? danger : success,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+  }
+
+  Map<String, dynamic> _decodeJsonResponse(http.Response response) {
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) return decoded;
+    throw const FormatException('Response is not a JSON object');
   }
 
   Future<void> _sendCode() async {
@@ -103,11 +96,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     if (phone.isEmpty) {
       _showSnack(
-        AppLanguage.text(
-          context,
-          'Enter your phone number',
-          'أدخل رقم الهاتف',
-        ),
+        AppLanguage.text(context, 'Enter your phone number', 'أدخل رقم الهاتف'),
         error: true,
       );
       return;
@@ -115,11 +104,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     if (!_isValidJordanPhone(phone)) {
       _showSnack(
-        AppLanguage.text(
-          context,
-          'Enter a valid Jordanian phone number',
-          'أدخل رقم هاتف أردني صحيح',
-        ),
+        AppLanguage.text(context, 'Enter a valid Jordanian phone number', 'أدخل رقم هاتف أردني صحيح'),
         error: true,
       );
       return;
@@ -128,26 +113,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => isLoading = true);
 
     try {
-      final user = await AppDatabase.instance.getUserByPhone(phone);
-
-      if (user == null) {
-        _showSnack(
-          AppLanguage.text(
-            context,
-            'No account found with this phone number',
-            'لا يوجد حساب مرتبط بهذا الرقم',
-          ),
-          error: true,
-        );
-
-        if (mounted) {
-          setState(() => isLoading = false);
-        }
-        return;
-      }
-
-      generatedOtp = _generateOtp();
-      normalizedPhone = phone;
+      /*
+        Important:
+        We do NOT block reset only because the account is not in local SQLite.
+        The server is the source of truth for password reset.
+        send_otp.php will check app_users.phone and return "No account found"
+        if the number is not registered.
+      */
 
       final response = await http
           .post(
@@ -156,38 +128,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({
-          'phone': phone,
-          'otp': generatedOtp,
-        }),
+        body: jsonEncode({'phone': phone}),
       )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 12));
 
-      if (response.statusCode == 200) {
-        bool ok = true;
+      debugPrint('SEND OTP STATUS: ${response.statusCode}');
+      debugPrint('SEND OTP BODY: ${response.body}');
 
-        try {
-          final decoded = jsonDecode(response.body);
-          if (decoded is Map<String, dynamic>) {
-            ok = decoded['success'] == true ||
-                decoded['status'] == 'success' ||
-                decoded['ok'] == true;
-          }
-        } catch (_) {
-          ok = true;
-        }
+      final decoded = _decodeJsonResponse(response);
 
-        if (!ok) {
-          _showSnack(
-            AppLanguage.text(
-              context,
-              'Server rejected OTP request',
-              'السيرفر رفض طلب رمز التحقق',
-            ),
-            error: true,
-          );
-          return;
-        }
+      if (response.statusCode == 200 && decoded['success'] == true) {
+        normalizedPhone = phone;
 
         setState(() {
           codeSent = true;
@@ -196,76 +147,93 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         });
 
         _showSnack(
-          AppLanguage.text(
-            context,
-            'OTP sent successfully',
-            'تم إرسال رمز التحقق بنجاح',
-          ),
+          AppLanguage.text(context, 'OTP sent successfully', 'تم إرسال رمز التحقق بنجاح'),
         );
       } else {
         _showSnack(
-          AppLanguage.text(
-            context,
-            'Server error: failed to send OTP',
-            'خطأ من السيرفر: فشل إرسال رمز التحقق',
-          ),
+          decoded['message']?.toString() ??
+              AppLanguage.text(context, 'Server error: failed to send OTP', 'خطأ من السيرفر: فشل إرسال رمز التحقق'),
           error: true,
         );
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('SEND OTP ERROR: $e');
       _showSnack(
-        AppLanguage.text(
-          context,
-          'Cannot connect to server. Check XAMPP/IP/API path.',
-          'لا يمكن الاتصال بالسيرفر. تأكد من XAMPP/IP ومسار API.',
-        ),
+        AppLanguage.text(context, 'Cannot connect to server or invalid server response', 'لا يمكن الاتصال بالسيرفر أو الرد غير صحيح'),
         error: true,
       );
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
-  void _verifyCode() {
+  Future<void> _verifyCode() async {
     final enteredOtp = _otpCtrl.text.trim();
 
     if (enteredOtp.isEmpty) {
       _showSnack(
-        AppLanguage.text(
-          context,
-          'Enter the code',
-          'أدخل الكود',
-        ),
+        AppLanguage.text(context, 'Enter the code', 'أدخل الكود'),
         error: true,
       );
       return;
     }
 
-    if (enteredOtp != generatedOtp) {
+    if (enteredOtp.length != 4) {
       _showSnack(
-        AppLanguage.text(
-          context,
-          'Wrong code',
-          'الكود غير صحيح',
-        ),
+        AppLanguage.text(context, 'OTP must be 4 digits', 'الكود يجب أن يكون 4 أرقام'),
         error: true,
       );
       return;
     }
 
-    setState(() {
-      verified = true;
-    });
+    final phone = normalizedPhone.isNotEmpty
+        ? normalizedPhone
+        : _normalizeJordanPhone(_phoneCtrl.text);
 
-    _showSnack(
-      AppLanguage.text(
-        context,
-        'Code verified',
-        'تم التحقق من الكود بنجاح',
-      ),
-    );
+    setState(() => isLoading = true);
+
+    try {
+      final response = await http
+          .post(
+        Uri.parse('${ApiConstants.baseUrl}/verify_otp.php'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'phone': phone,
+          'otp': enteredOtp,
+        }),
+      )
+          .timeout(const Duration(seconds: 12));
+
+      debugPrint('VERIFY OTP STATUS: ${response.statusCode}');
+      debugPrint('VERIFY OTP BODY: ${response.body}');
+
+      final decoded = _decodeJsonResponse(response);
+
+      if (response.statusCode == 200 && decoded['success'] == true) {
+        setState(() => verified = true);
+
+        _showSnack(
+          AppLanguage.text(context, 'Code verified', 'تم التحقق من الكود بنجاح'),
+        );
+      } else {
+        _showSnack(
+          decoded['message']?.toString() ??
+              AppLanguage.text(context, 'Wrong code', 'الكود غير صحيح'),
+          error: true,
+        );
+      }
+    } catch (e) {
+      debugPrint('VERIFY OTP ERROR: $e');
+      _showSnack(
+        AppLanguage.text(context, 'Cannot verify OTP. Check server.', 'لا يمكن التحقق من الكود. تأكد من السيرفر.'),
+        error: true,
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
   }
 
   Future<void> _resetPassword() async {
@@ -274,11 +242,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     if (newPass.isEmpty || confirmPass.isEmpty) {
       _showSnack(
-        AppLanguage.text(
-          context,
-          'Fill all password fields',
-          'املأ جميع حقول كلمة المرور',
-        ),
+        AppLanguage.text(context, 'Fill all password fields', 'املأ جميع حقول كلمة المرور'),
         error: true,
       );
       return;
@@ -298,11 +262,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     if (newPass != confirmPass) {
       _showSnack(
-        AppLanguage.text(
-          context,
-          'Passwords do not match',
-          'كلمتا المرور غير متطابقتين',
-        ),
+        AppLanguage.text(context, 'Passwords do not match', 'كلمتا المرور غير متطابقتين'),
         error: true,
       );
       return;
@@ -312,34 +272,58 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ? normalizedPhone
         : _normalizeJordanPhone(_phoneCtrl.text);
 
-    final updated = await AppDatabase.instance.updateUserPassword(
-      phone: phone,
-      newPassword: newPass,
-    );
+    setState(() => isLoading = true);
 
-    if (updated == 0) {
+    try {
+      final response = await http
+          .post(
+        Uri.parse('${ApiConstants.baseUrl}/reset_password.php'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'phone': phone,
+          'new_password': newPass,
+        }),
+      )
+          .timeout(const Duration(seconds: 12));
+
+      debugPrint('RESET PASSWORD STATUS: ${response.statusCode}');
+      debugPrint('RESET PASSWORD BODY: ${response.body}');
+
+      final decoded = _decodeJsonResponse(response);
+
+      if (response.statusCode == 200 && decoded['success'] == true) {
+        // Keep local offline login consistent when the same account exists locally.
+        await AppDatabase.instance.updateUserPassword(
+          phone: phone,
+          newPassword: newPass,
+        );
+
+        if (!mounted) return;
+
+        _showSnack(
+          AppLanguage.text(context, 'Password updated successfully', 'تم تغيير كلمة المرور بنجاح'),
+        );
+
+        Navigator.pop(context);
+      } else {
+        _showSnack(
+          decoded['message']?.toString() ??
+              AppLanguage.text(context, 'Password was not updated', 'لم يتم تغيير كلمة المرور'),
+          error: true,
+        );
+      }
+    } catch (e) {
+      debugPrint('RESET PASSWORD ERROR: $e');
       _showSnack(
-        AppLanguage.text(
-          context,
-          'Password was not updated',
-          'لم يتم تغيير كلمة المرور',
-        ),
+        AppLanguage.text(context, 'Cannot reset password. Check server.', 'لا يمكن تغيير كلمة المرور. تأكد من السيرفر.'),
         error: true,
       );
-      return;
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-
-    if (!mounted) return;
-
-    _showSnack(
-      AppLanguage.text(
-        context,
-        'Password updated successfully',
-        'تم تغيير كلمة المرور بنجاح',
-      ),
-    );
-
-    Navigator.pop(context);
   }
 
   @override
@@ -352,15 +336,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         backgroundColor: background,
         appBar: AppBar(
           title: Text(
-            AppLanguage.text(
-              context,
-              'Forgot Password',
-              'نسيت كلمة المرور',
-            ),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            AppLanguage.text(context, 'Forgot Password', 'نسيت كلمة المرور'),
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
           ),
           backgroundColor: primary,
           iconTheme: const IconThemeData(color: Colors.white),
@@ -387,18 +364,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.lock_reset_rounded,
-                    size: 70,
-                    color: primary,
-                  ),
+                  Icon(Icons.lock_reset_rounded, size: 70, color: primary),
                   const SizedBox(height: 18),
                   Text(
-                    AppLanguage.text(
-                      context,
-                      'Reset your password',
-                      'إعادة تعيين كلمة المرور',
-                    ),
+                    AppLanguage.text(context, 'Reset your password', 'إعادة تعيين كلمة المرور'),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 24,
@@ -414,38 +383,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       'أدخل رقم هاتفك المسجل، تحقق من الكود، ثم أنشئ كلمة مرور جديدة.',
                     ),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: textMuted,
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
+                    style: const TextStyle(color: textMuted, fontSize: 14, height: 1.5),
                   ),
                   const SizedBox(height: 28),
                   _inputField(
                     controller: _phoneCtrl,
-                    hint: AppLanguage.text(
-                      context,
-                      'Phone Number',
-                      'رقم الهاتف',
-                    ),
+                    hint: AppLanguage.text(context, 'Phone Number', 'رقم الهاتف'),
                     icon: Icons.phone_android_rounded,
                     keyboard: TextInputType.phone,
                     enabled: !codeSent,
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                        RegExp(r'[0-9+\-\s()]'),
-                      ),
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s()]')),
                       LengthLimitingTextInputFormatter(16),
                     ],
                   ),
                   const SizedBox(height: 18),
                   if (!codeSent)
                     _button(
-                      text: AppLanguage.text(
-                        context,
-                        'Send Code',
-                        'إرسال الكود',
-                      ),
+                      text: AppLanguage.text(context, 'Send Code', 'إرسال الكود'),
                       onTap: _sendCode,
                       isLoading: isLoading,
                     ),
@@ -460,11 +415,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     const SizedBox(height: 18),
                     _inputField(
                       controller: _otpCtrl,
-                      hint: AppLanguage.text(
-                        context,
-                        'Enter OTP',
-                        'أدخل الكود',
-                      ),
+                      hint: AppLanguage.text(context, 'Enter OTP', 'أدخل الكود'),
                       icon: Icons.sms_outlined,
                       keyboard: TextInputType.number,
                       enabled: !verified,
@@ -476,45 +427,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     const SizedBox(height: 18),
                     if (!verified)
                       _button(
-                        text: AppLanguage.text(
-                          context,
-                          'Verify Code',
-                          'تحقق من الكود',
-                        ),
+                        text: AppLanguage.text(context, 'Verify Code', 'تحقق من الكود'),
                         onTap: _verifyCode,
+                        isLoading: isLoading,
                       ),
                   ],
                   if (verified) ...[
                     const SizedBox(height: 18),
                     _inputField(
                       controller: _newPassCtrl,
-                      hint: AppLanguage.text(
-                        context,
-                        'New Password',
-                        'كلمة المرور الجديدة',
-                      ),
+                      hint: AppLanguage.text(context, 'New Password', 'كلمة المرور الجديدة'),
                       icon: Icons.lock_outline,
                       obscure: true,
                     ),
                     const SizedBox(height: 18),
                     _inputField(
                       controller: _confirmPassCtrl,
-                      hint: AppLanguage.text(
-                        context,
-                        'Confirm Password',
-                        'تأكيد كلمة المرور',
-                      ),
+                      hint: AppLanguage.text(context, 'Confirm Password', 'تأكيد كلمة المرور'),
                       icon: Icons.lock_reset,
                       obscure: true,
                     ),
                     const SizedBox(height: 22),
                     _button(
-                      text: AppLanguage.text(
-                        context,
-                        'Reset Password',
-                        'تغيير كلمة المرور',
-                      ),
+                      text: AppLanguage.text(context, 'Reset Password', 'تغيير كلمة المرور'),
                       onTap: _resetPassword,
+                      isLoading: isLoading,
                     ),
                   ],
                 ],
@@ -547,10 +484,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         prefixIcon: Icon(icon, color: primary),
         filled: true,
         fillColor: const Color(0xFFF1F5F9),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -572,25 +506,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           backgroundColor: primary,
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: isLoading
             ? const SizedBox(
           height: 24,
           width: 24,
-          child: CircularProgressIndicator(
-            color: Colors.white,
-            strokeWidth: 2.5,
-          ),
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
         )
             : Text(
           text,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
     );

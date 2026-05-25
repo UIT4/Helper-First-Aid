@@ -821,9 +821,34 @@ class _SignupScreenState extends State<SignupScreen> {
     return isArabic ? item['ar']! : item['en']!;
   }
 
+
+  bool _isCompactLayout(BuildContext context) {
+    final media = MediaQuery.of(context);
+    return media.orientation == Orientation.landscape || media.size.height < 720;
+  }
+
+  double _screenPadding(BuildContext context) => _isCompactLayout(context) ? 14 : 24;
+
+  double _pageTopPadding(BuildContext context) => _isCompactLayout(context) ? 14 : 50;
+
+  double _pageBottomPadding(BuildContext context) => _isCompactLayout(context) ? 12 : 24;
+
+  double _titleFontSize(BuildContext context) => _isCompactLayout(context) ? 24 : 34;
+
+  double _subtitleFontSize(BuildContext context) => _isCompactLayout(context) ? 14 : 17;
+
+  double _contentGap(BuildContext context) => _isCompactLayout(context) ? 20 : 42;
+
+  double _buttonHeight(BuildContext context) => _isCompactLayout(context) ? 48 : 60;
+
+  double _buttonRadius(BuildContext context) => _isCompactLayout(context) ? 16 : 20;
+
   @override
   Widget build(BuildContext context) {
     final isArabic = AppLanguage.isArabicContext(context);
+    final compactLayout = _isCompactLayout(context);
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final hideBottomActions = compactLayout && keyboardOpen;
 
     return Directionality(
       textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
@@ -832,23 +857,42 @@ class _SignupScreenState extends State<SignupScreen> {
         backgroundColor: background,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(_screenPadding(context)),
             child: Column(
               children: [
                 Row(
                   children: [
-                    TextButton.icon(
-                      onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
-                      icon: Icon(Icons.arrow_back_ios_new, color: primary, size: 18),
-                      label: Text(AppLanguage.text(context, 'Cancel', 'إلغاء'), style: TextStyle(color: primary, fontWeight: FontWeight.bold)),
+                    Expanded(
+                      child: Align(
+                        alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () => Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          ),
+                          icon: Icon(Icons.arrow_back_ios_new, color: primary, size: 18),
+                          label: Text(
+                            AppLanguage.text(context, 'Cancel', 'إلغاء'),
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: primary, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
                     ),
-                    const Spacer(),
-                    Text(AppLanguage.text(context, 'Create Account', 'إنشاء حساب'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const Spacer(),
-                    const SizedBox(width: 82),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          AppLanguage.text(context, 'Create Account', 'إنشاء حساب'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                    ),
+                    const Expanded(child: SizedBox.shrink()),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: _isCompactLayout(context) ? 6 : 12),
                 LinearProgressIndicator(
                   value: (currentPage + 1) / 12,
                   borderRadius: BorderRadius.circular(20),
@@ -856,7 +900,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   backgroundColor: Colors.grey.shade300,
                   color: primary,
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: _isCompactLayout(context) ? 8 : 20),
                 Expanded(
                   child: PageView(
                     controller: _pageController,
@@ -933,42 +977,44 @@ class _SignupScreenState extends State<SignupScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: currentPage == 0 || isSaving ? null : () => _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: primary,
-                          side: BorderSide(color: primary, width: 1.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          minimumSize: const Size.fromHeight(60),
-                        ),
-                        icon: const Icon(Icons.arrow_back),
-                        label: Text(AppLanguage.text(context, 'BACK', 'رجوع'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: isSaving ? null : _nextPage,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          minimumSize: const Size.fromHeight(60),
-                        ),
-                        icon: Icon(currentPage == 11 ? Icons.check : Icons.arrow_forward, color: Colors.white),
-                        label: isSaving
-                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : Text(
-                          currentPage == 11 ? AppLanguage.text(context, 'FINISH', 'إنهاء') : AppLanguage.text(context, 'NEXT', 'التالي'),
-                          style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                if (!hideBottomActions) ...[
+                  SizedBox(height: compactLayout ? 6 : 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: currentPage == 0 || isSaving ? null : () => _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: primary,
+                            side: BorderSide(color: primary, width: 1.5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_buttonRadius(context))),
+                            minimumSize: Size.fromHeight(_buttonHeight(context)),
+                          ),
+                          icon: const Icon(Icons.arrow_back),
+                          label: Text(AppLanguage.text(context, 'BACK', 'رجوع'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: isSaving ? null : _nextPage,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_buttonRadius(context))),
+                            minimumSize: Size.fromHeight(_buttonHeight(context)),
+                          ),
+                          icon: Icon(currentPage == 11 ? Icons.check : Icons.arrow_forward, color: Colors.white),
+                          label: isSaving
+                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : Text(
+                            currentPage == 11 ? AppLanguage.text(context, 'FINISH', 'إنهاء') : AppLanguage.text(context, 'NEXT', 'التالي'),
+                            style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -1275,18 +1321,21 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _page({required String title, required String subtitle, required List<Widget> children}) {
+    final topPadding = _pageTopPadding(context);
+    final bottomPadding = _pageBottomPadding(context);
+    final gap = _contentGap(context);
     return SingleChildScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Padding(
-        padding: const EdgeInsets.only(top: 50, bottom: 24),
+        padding: EdgeInsets.only(top: topPadding, bottom: bottomPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.black)),
+            Text(title, style: TextStyle(fontSize: _titleFontSize(context), fontWeight: FontWeight.w900, color: Colors.black)),
             const SizedBox(height: 12),
-            Text(subtitle, style: TextStyle(fontSize: 17, color: Colors.grey.shade600, height: 1.4)),
-            const SizedBox(height: 42),
-            ...children.map((e) => Padding(padding: const EdgeInsets.only(bottom: 16), child: e)),
+            Text(subtitle, style: TextStyle(fontSize: _subtitleFontSize(context), color: Colors.grey.shade600, height: 1.4)),
+            SizedBox(height: gap),
+            ...children.map((e) => Padding(padding: EdgeInsets.only(bottom: _isCompactLayout(context) ? 10 : 16), child: e)),
           ],
         ),
       ),
@@ -1308,7 +1357,7 @@ class _SignupScreenState extends State<SignupScreen> {
         counterText: '',
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: _isCompactLayout(context) ? 16 : 22),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
       ),
     );
@@ -1594,7 +1643,7 @@ class _SignupScreenState extends State<SignupScreen> {
     final safeValue = value != null && items.any((e) => e['en'] == value) ? value : null;
     return DropdownButtonFormField<String>(
       value: safeValue,
-      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon, color: primary), filled: true, fillColor: Colors.white, contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20), border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none)),
+      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon, color: primary), filled: true, fillColor: Colors.white, contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: _isCompactLayout(context) ? 14 : 20), border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none)),
       items: items.map((item) => DropdownMenuItem<String>(value: item['en'], child: Text(_label(item)))).toList(),
       onChanged: onChanged,
     );
@@ -1612,7 +1661,7 @@ class _SignupScreenState extends State<SignupScreen> {
             : IconButton(icon: const Icon(Icons.my_location), onPressed: _detectCountryFromLocation),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20), border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: _isCompactLayout(context) ? 14 : 20), border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
       ),
       items: countries.map((item) => DropdownMenuItem<String>(value: item['en'], child: Text(AppLanguage.isArabicContext(context) ? item['ar']! : item['en']!))).toList(),
       onChanged: (value) {
@@ -1639,7 +1688,7 @@ class _SignupScreenState extends State<SignupScreen> {
         prefixIcon: Icon(icon, color: primary),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: _isCompactLayout(context) ? 14 : 20),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),
           borderSide: BorderSide(color: primary.withValues(alpha: 0.14)),
@@ -1683,6 +1732,14 @@ class SignupColorStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final compact = media.orientation == Orientation.landscape || media.size.height < 720;
+    final titleSize = compact ? 24.0 : 34.0;
+    final subtitleSize = compact ? 14.0 : 17.0;
+    final topPadding = compact ? 14.0 : 50.0;
+    final bottomPadding = compact ? 12.0 : 24.0;
+    final gap = compact ? 20.0 : 42.0;
+
     final options = [
       {'value': 'blue', 'en': 'Blue', 'ar': 'أزرق'},
       {'value': 'orange', 'en': 'Orange', 'ar': 'برتقالي'},
@@ -1691,20 +1748,20 @@ class SignupColorStep extends StatelessWidget {
 
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.only(top: 50, bottom: 24),
+        padding: EdgeInsets.only(top: topPadding, bottom: bottomPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               AppLanguage.text(context, 'Do you have color blindness?', 'هل تعاني من عمى الالوان ؟'),
-              style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.black),
+              style: TextStyle(fontSize: titleSize, fontWeight: FontWeight.w900, color: Colors.black),
             ),
             const SizedBox(height: 12),
             Text(
               AppLanguage.text(context, 'Choose the app theme', 'اختر سمة التطبيق'),
-              style: TextStyle(fontSize: 17, color: Colors.grey.shade600, height: 1.4),
+              style: TextStyle(fontSize: subtitleSize, color: Colors.grey.shade600, height: 1.4),
             ),
-            const SizedBox(height: 42),
+            SizedBox(height: gap),
             ...options.map((item) {
               final value = item['value']!;
               final color = _themeColor(value);
