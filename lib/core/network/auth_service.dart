@@ -7,16 +7,16 @@ import '../constants/api_constants.dart';
 import 'sync_service.dart';
 
 class AuthResult {
+  final bool serverReached;
   final bool ok;
   final String message;
   final Map<String, dynamic>? user;
-  final bool serverReached;
 
   const AuthResult({
+    required this.serverReached,
     required this.ok,
     required this.message,
     this.user,
-    required this.serverReached,
   });
 }
 
@@ -25,16 +25,61 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final deviceId = await SyncService.getOrCreateDeviceId();
+    try {
+      final deviceId = await SyncService.getOrCreateDeviceId();
 
-    return _post(
-      ApiConstants.authLogin,
-      {
-        'email': email.trim().toLowerCase(),
-        'password': password,
-        'device_id': deviceId,
-      },
-    );
+      final response = await http
+          .post(
+        Uri.parse(ApiConstants.authLogin),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email.trim().toLowerCase(),
+          'password': password.trim(),
+          'device_id': deviceId,
+        }),
+      )
+          .timeout(const Duration(seconds: 12));
+
+      debugPrint('LOGIN STATUS: ${response.statusCode}');
+      debugPrint('LOGIN BODY: ${response.body}');
+
+      Map<String, dynamic> decoded = {};
+
+      try {
+        final parsed = jsonDecode(response.body);
+        if (parsed is Map<String, dynamic>) {
+          decoded = parsed;
+        }
+      } catch (_) {
+        return AuthResult(
+          serverReached: true,
+          ok: false,
+          message: 'Invalid JSON response from server',
+        );
+      }
+
+      final success = decoded['success'] == true;
+
+      return AuthResult(
+        serverReached: true,
+        ok: response.statusCode == 200 && success,
+        message: decoded['message']?.toString() ?? '',
+        user: decoded['user'] is Map<String, dynamic>
+            ? Map<String, dynamic>.from(decoded['user'])
+            : null,
+      );
+    } catch (e) {
+      debugPrint('LOGIN ERROR: $e');
+
+      return const AuthResult(
+        serverReached: false,
+        ok: false,
+        message: 'Server unreachable',
+      );
+    }
   }
 
   static Future<AuthResult> register({
@@ -43,57 +88,63 @@ class AuthService {
     required String phone,
     required String password,
   }) async {
-    final deviceId = await SyncService.getOrCreateDeviceId();
-
-    return _post(
-      ApiConstants.authRegister,
-      {
-        'full_name': fullName.trim(),
-        'email': email.trim().toLowerCase(),
-        'phone': phone.trim(),
-        'password': password,
-        'device_id': deviceId,
-      },
-    );
-  }
-
-  static Future<AuthResult> _post(
-      String url,
-      Map<String, dynamic> payload,
-      ) async {
     try {
+      final deviceId = await SyncService.getOrCreateDeviceId();
+
       final response = await http
           .post(
-        Uri.parse(url),
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
+        Uri.parse(ApiConstants.authRegister),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'full_name': fullName.trim(),
+          'email': email.trim().toLowerCase(),
+          'phone': phone.trim(),
+          'password': password.trim(),
+          'device_id': deviceId,
+        }),
       )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 12));
 
-      debugPrint('Auth response ${response.statusCode}: ${response.body}');
+      debugPrint('REGISTER STATUS: ${response.statusCode}');
+      debugPrint('REGISTER BODY: ${response.body}');
 
       Map<String, dynamic> decoded = {};
-      if (response.body.trim().isNotEmpty) {
-        final raw = jsonDecode(response.body);
-        if (raw is Map<String, dynamic>) decoded = raw;
+
+      try {
+        final parsed = jsonDecode(response.body);
+        if (parsed is Map<String, dynamic>) {
+          decoded = parsed;
+        }
+      } catch (_) {
+        return AuthResult(
+          serverReached: true,
+          ok: false,
+          message: 'Invalid JSON response from server',
+        );
       }
 
-      final ok = response.statusCode >= 200 &&
-          response.statusCode < 300 &&
-          (decoded['ok'] == true || decoded['success'] == true || decoded['status'] == 'success');
+      final success = decoded['success'] == true;
 
       return AuthResult(
-        ok: ok,
-        message: decoded['message']?.toString() ?? (ok ? 'Success' : 'Server rejected request'),
-        user: decoded['user'] is Map<String, dynamic> ? decoded['user'] as Map<String, dynamic> : decoded,
         serverReached: true,
+        ok: response.statusCode >= 200 &&
+            response.statusCode < 300 &&
+            success,
+        message: decoded['message']?.toString() ?? '',
+        user: decoded['user'] is Map<String, dynamic>
+            ? Map<String, dynamic>.from(decoded['user'])
+            : null,
       );
     } catch (e) {
-      debugPrint('Auth server skipped: $e');
-      return AuthResult(
-        ok: false,
-        message: e.toString(),
+      debugPrint('REGISTER ERROR: $e');
+
+      return const AuthResult(
         serverReached: false,
+        ok: false,
+        message: 'Server unreachable',
       );
     }
   }

@@ -43,13 +43,6 @@ class ResultScreen extends StatelessWidget {
         'en': 'Unconscious but Breathing',
         'ar': 'فاقد الوعي ويتنفس',
       },
-      'not_breathing_cpr': {'en': 'Not Breathing / CPR', 'ar': 'لا يتنفس / إنعاش'},
-      'bleeding': {'en': 'Heavy Bleeding', 'ar': 'نزيف شديد'},
-      'burns': {'en': 'Burn Injury', 'ar': 'حروق'},
-      'fracture': {'en': 'Fracture', 'ar': 'كسر'},
-      'seizure': {'en': 'Seizure', 'ar': 'تشنج'},
-      'stroke': {'en': 'Stroke', 'ar': 'سكتة دماغية'},
-      'unknown': {'en': 'Unknown', 'ar': 'غير معروف'},
     };
 
     final item = map[code];

@@ -23,6 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _rememberMe = false;
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   static Color get primary => AppColors.primary;
   static const Color background = Color(0xFFF8FAFC);
@@ -51,7 +52,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() {
       _rememberMe = remember;
-
       if (remember) {
         _emailCtrl.text = prefs.getString('rememberedEmail') ?? '';
         _passwordCtrl.text = prefs.getString('rememberedPassword') ?? '';
@@ -69,17 +69,24 @@ class _LoginScreenState extends State<LoginScreen> {
     ).hasMatch(password);
   }
 
+  void _startBackgroundSync() {
+    Future.microtask(() async {
+      try {
+        await SyncService.syncProfile();
+        await SyncService.syncIncidents();
+      } catch (e) {
+        debugPrint('Background sync skipped: $e');
+      }
+    });
+  }
+
   Future<void> _login() async {
     final email = _emailCtrl.text.trim().toLowerCase();
     final password = _passwordCtrl.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
       _showSnack(
-        AppLanguage.text(
-          context,
-          'Enter email and password',
-          'أدخل البريد الإلكتروني وكلمة المرور',
-        ),
+        AppLanguage.text(context, 'Enter email and password', 'أدخل البريد الإلكتروني وكلمة المرور'),
         isError: true,
       );
       return;
@@ -87,11 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!_isValidEmail(email)) {
       _showSnack(
-        AppLanguage.text(
-          context,
-          'Email must be like example@gmail.com',
-          'البريد يجب أن يكون مثل example@gmail.com',
-        ),
+        AppLanguage.text(context, 'Email must be like example@gmail.com', 'البريد يجب أن يكون مثل example@gmail.com'),
         isError: true,
       );
       return;
@@ -109,24 +112,32 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    setState(() => _isLoading = true);
+
     final localUser = await AppDatabase.instance.loginUser(
       email: email,
       password: password,
     );
 
     if (localUser != null) {
-      await _saveLoginSession(email, password);
+      await _saveLoginSession(
+        email: email,
+        password: password,
+        phone: (localUser['phone'] ?? '').toString(),
+      );
 
-      // App is offline-first: local login is allowed immediately.
-      // If XAMPP/API is reachable, confirm the account and upload pending profile/incidents.
-      final serverResult = await AuthService.login(email: email, password: password);
-      if (serverResult.serverReached && serverResult.ok) {
-        await AppDatabase.instance.markUserSynced(email);
-      }
-      await SyncService.syncProfile();
-      await SyncService.syncIncidents();
+      Future.microtask(() async {
+        final serverResult = await AuthService.login(email: email, password: password);
+        if (serverResult.serverReached && serverResult.ok) {
+          await AppDatabase.instance.markUserSynced(email);
+        }
+      });
+
+      _startBackgroundSync();
 
       if (!mounted) return;
+      setState(() => _isLoading = false);
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -134,30 +145,45 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Fresh install or user created on another device: try XAMPP/API login.
     final serverResult = await AuthService.login(email: email, password: password);
+
+    debugPrint('SERVER REACHED: ${serverResult.serverReached}');
+    debugPrint('SERVER OK: ${serverResult.ok}');
+    debugPrint('SERVER MESSAGE: ${serverResult.message}');
+    debugPrint('SERVER USER: ${serverResult.user}');
 
     if (serverResult.serverReached && serverResult.ok) {
       final serverUser = serverResult.user ?? {};
+      final phone = (serverUser['phone'] ?? '').toString();
+
       await AppDatabase.instance.insertOrUpdateUser(
         fullName: (serverUser['full_name'] ?? serverUser['name'] ?? '').toString(),
         email: (serverUser['email'] ?? email).toString(),
-        phone: (serverUser['phone'] ?? '').toString(),
+        phone: phone,
         password: password,
         pendingSync: 0,
       );
 
-      await _saveLoginSession(email, password);
-      await SyncService.syncProfile();
-      await SyncService.syncIncidents();
+      await _saveLoginSession(
+        email: email,
+        password: password,
+        phone: phone,
+      );
+
+      _startBackgroundSync();
 
       if (!mounted) return;
+      setState(() => _isLoading = false);
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
       return;
     }
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
 
     _showSnack(
       serverResult.serverReached
@@ -167,12 +193,21 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _saveLoginSession(String email, String password) async {
+  Future<void> _saveLoginSession({
+    required String email,
+    required String password,
+    required String phone,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
 
     await prefs.setBool('isGuest', false);
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('userEmail', email);
+
+    if (phone.trim().isNotEmpty) {
+      await prefs.setString('userPhone', phone.trim());
+      await prefs.setString('registeredPhone', phone.trim());
+    }
 
     if (_rememberMe) {
       await prefs.setBool('rememberMe', true);
@@ -207,9 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _forgotPassword() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const ForgotPasswordScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
     );
   }
 
@@ -287,35 +320,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: _toggleLanguage,
                 child: Text(
                   isArabic ? 'English' : 'العربية',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
           ),
-          const Icon(
-            Icons.health_and_safety_rounded,
-            color: Colors.white,
-            size: 78,
-          ),
+          const Icon(Icons.health_and_safety_rounded, color: Colors.white, size: 78),
           const SizedBox(height: 16),
           Text(
             AppLanguage.text(context, 'Rescue Assistant', 'مساعد الإسعاف'),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
           Text(
-            AppLanguage.text(
-              context,
-              'Instant emergency help',
-              'مساعدة فورية في الحالات الطارئة',
-            ),
+            AppLanguage.text(context, 'Instant emergency help', 'مساعدة فورية في الحالات الطارئة'),
             style: const TextStyle(color: Colors.white70, fontSize: 15),
           ),
         ],
@@ -330,11 +348,7 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           _inputField(
             controller: _emailCtrl,
-            hint: AppLanguage.text(
-              context,
-              'Gmail Email',
-              'البريد الإلكتروني Gmail',
-            ),
+            hint: AppLanguage.text(context, ' Email', 'البريد الإلكتروني '),
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
           ),
@@ -404,21 +418,21 @@ class _LoginScreenState extends State<LoginScreen> {
       width: double.infinity,
       height: 54,
       child: ElevatedButton(
-        onPressed: _login,
+        onPressed: _isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
           elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         ),
-        child: Text(
+        child: _isLoading
+            ? const SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        )
+            : Text(
           AppLanguage.text(context, 'Log in', 'تسجيل الدخول'),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -426,7 +440,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildCreateAccountButton() {
     return TextButton(
-      onPressed: () {
+      onPressed: _isLoading
+          ? null
+          : () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const SignupScreen()),
@@ -434,27 +450,20 @@ class _LoginScreenState extends State<LoginScreen> {
       },
       child: Text(
         AppLanguage.text(context, 'CREATE ACCOUNT', 'إنشاء حساب'),
-        style: TextStyle(
-          color: primary,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(color: primary, fontWeight: FontWeight.bold),
       ),
     );
   }
 
   Widget _buildGuestButton() {
     return TextButton(
-      onPressed: _guestLogin,
+      onPressed: _isLoading ? null : _guestLogin,
       child: RichText(
         text: TextSpan(
           children: [
             TextSpan(
               text: AppLanguage.text(context, 'FIRST HELP? ', 'مساعدة أولية؟ '),
-              style: const TextStyle(
-                color: danger,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(color: danger, fontSize: 16, fontWeight: FontWeight.bold),
             ),
             TextSpan(
               text: AppLanguage.text(context, 'CLICK HERE', 'اضغط هنا'),
@@ -489,9 +498,7 @@ class _LoginScreenState extends State<LoginScreen> {
         suffixIcon: obscure
             ? IconButton(
           icon: Icon(
-            _obscurePassword
-                ? Icons.visibility_off
-                : Icons.visibility,
+            _obscurePassword ? Icons.visibility_off : Icons.visibility,
             color: textMuted,
           ),
           onPressed: () {
@@ -504,9 +511,7 @@ class _LoginScreenState extends State<LoginScreen> {
         filled: true,
         fillColor: const Color(0xFFF1F5F9),
         contentPadding: const EdgeInsets.symmetric(vertical: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
