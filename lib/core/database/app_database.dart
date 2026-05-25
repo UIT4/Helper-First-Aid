@@ -95,8 +95,8 @@ class AppDatabase {
         conditions TEXT,
         medications TEXT,
         notes TEXT,
-        pending_sync INTEGER DEFAULT 1,
-        updated_at TEXT
+        updated_at TEXT,
+        pending_sync INTEGER DEFAULT 1
       )
     ''');
 
@@ -899,6 +899,70 @@ class AppDatabase {
       },
       where: 'phone = ?',
       whereArgs: [phone.trim()],
+    );
+  }
+
+
+  Future<void> saveDownloadedIncidents(List<dynamic> incidents) async {
+    final email = await _currentUserEmail();
+    if (email == null) return;
+
+    final db = await database;
+
+    for (final raw in incidents) {
+      if (raw is! Map) continue;
+      final item = Map<String, dynamic>.from(raw);
+
+      final serverId = _toNullableInt(item['server_id'] ?? item['id']);
+      if (serverId == null) continue;
+
+      final existing = await db.query(
+        Tables.incidents,
+        where: 'server_id = ? AND user_email = ?',
+        whereArgs: [serverId, email],
+        limit: 1,
+      );
+
+      final values = <String, dynamic>{
+        'user_email': email,
+        'created_at': (item['created_at'] ?? item['occurred_at'] ?? DateTime.now().toIso8601String()).toString(),
+        'lang': (item['lang'] ?? 'en').toString(),
+        'input_text': (item['input_text'] ?? '').toString(),
+        'predicted_category_code': (item['predicted_category_code'] ?? item['category_code'] ?? '').toString(),
+        'confidence': item['confidence'],
+        'urgency': (item['urgency'] ?? item['urgency_level'] ?? 'medium').toString(),
+        'lat': item['lat'],
+        'lng': item['lng'],
+        'location_source': (item['location_source'] ?? 'none').toString(),
+        'notes': (item['notes'] ?? '').toString(),
+        'device_id': (item['device_id'] ?? '').toString(),
+        'synced': 1,
+        'server_id': serverId,
+      };
+
+      if (existing.isEmpty) {
+        await db.insert(Tables.incidents, values);
+      } else {
+        await db.update(
+          Tables.incidents,
+          values,
+          where: 'server_id = ? AND user_email = ?',
+          whereArgs: [serverId, email],
+        );
+      }
+    }
+  }
+
+  Future<void> markCurrentProfileSynced() async {
+    final email = await _currentUserEmail();
+    if (email == null) return;
+
+    final db = await database;
+    await db.update(
+      Tables.patient,
+      {'pending_sync': 0, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'user_email = ?',
+      whereArgs: [email],
     );
   }
 

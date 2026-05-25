@@ -45,6 +45,7 @@ class SyncService {
     await syncUser();
     await syncProfile();
     await syncIncidents();
+    await downloadIncidents();
   }
 
   static Future<void> syncUser() async {
@@ -111,10 +112,11 @@ class SyncService {
     final contacts = await db.getContacts();
     final settings = await db.getSettings();
     final deviceId = await getOrCreateDeviceId();
+    final email = (user?['email'] ?? prefs.getString('userEmail') ?? '').toString().trim().toLowerCase();
 
     final payload = {
       'device_id': deviceId,
-      'email': prefs.getString('userEmail') ?? user?['email'] ?? '',
+      'email': email,
       'full_name': profile?['full_name'] ?? user?['full_name'] ?? '',
       'phone': user?['phone'] ?? prefs.getString('userPhone') ?? '',
       'password': user?['password'] ?? '',
@@ -158,6 +160,7 @@ class SyncService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         await db.markCurrentUserSynced();
+        await db.markCurrentProfileSynced();
       }
     } catch (e) {
       debugPrint('Profile sync skipped: $e');
@@ -171,9 +174,13 @@ class SyncService {
     if (incidents.isEmpty) return;
 
     final deviceId = await getOrCreateDeviceId();
+    final prefs = await SharedPreferences.getInstance();
+    final user = await db.getCurrentUserAccount();
+    final email = (user?['email'] ?? prefs.getString('userEmail') ?? '').toString().trim().toLowerCase();
 
     final payload = {
       'device_id': deviceId,
+      'email': email,
       'incidents': incidents.map((incident) {
         return {
           'local_id': incident['id'],
@@ -233,6 +240,46 @@ class SyncService {
       }
     } catch (e) {
       debugPrint('Incident sync skipped: $e');
+    }
+  }
+
+
+  static Future<void> downloadIncidents() async {
+    final db = AppDatabase.instance;
+    final prefs = await SharedPreferences.getInstance();
+
+    if (prefs.getBool('isGuest') ?? false) return;
+
+    final user = await db.getCurrentUserAccount();
+    final email = (user?['email'] ?? prefs.getString('userEmail') ?? '').toString().trim().toLowerCase();
+
+    if (email.isEmpty) return;
+
+    try {
+      final response = await http
+          .post(
+        Uri.parse(ApiConstants.getIncidents),
+        headers: const {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'email': email}),
+      )
+          .timeout(const Duration(seconds: 12));
+
+      debugPrint('Download incidents response: ${response.statusCode} ${response.body}');
+
+      if (response.statusCode < 200 || response.statusCode >= 300) return;
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic> || decoded['success'] != true) return;
+
+      final incidents = decoded['incidents'];
+      if (incidents is List) {
+        await db.saveDownloadedIncidents(incidents);
+      }
+    } catch (e) {
+      debugPrint('Download incidents skipped: $e');
     }
   }
 
