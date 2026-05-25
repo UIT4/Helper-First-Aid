@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/database/app_database.dart';
 import '../../core/language/app_language.dart';
+import '../../core/network/auth_service.dart';
+import '../../core/network/sync_service.dart';
 import '../home/home_screen.dart';
 import 'login_screen.dart';
 
@@ -508,7 +510,7 @@ class _SignupScreenState extends State<SignupScreen> {
       final first = _firstCtrl.text.trim();
       final middle = _middleCtrl.text.trim();
       final last = _lastCtrl.text.trim();
-      final fullName = '$first $middle $last';
+      final fullName = '$first $middle $last'.replaceAll(RegExp(r'\s+'), ' ').trim();
       final email = _emailCtrl.text.trim().toLowerCase();
       final password = _passwordCtrl.text.trim();
       final phone = _phoneCtrl.text.trim();
@@ -516,11 +518,28 @@ class _SignupScreenState extends State<SignupScreen> {
       final existingUser = await AppDatabase.instance.getUserByEmail(email);
       if (existingUser != null) {
         setState(() => isSaving = false);
-        _showSnack(AppLanguage.text(context, 'This email is already registered', 'هذا الإيميل مسجل مسبقاً'));
+        _showSnack(AppLanguage.text(context, 'This email is already registered on this device', 'هذا الإيميل مسجل مسبقاً على هذا الجهاز'));
+        return;
+      }
+
+      final serverResult = await AuthService.register(
+        fullName: fullName,
+        email: email,
+        phone: phone,
+        password: password,
+      );
+
+      if (serverResult.serverReached && !serverResult.ok) {
+        setState(() => isSaving = false);
+        _showSnack(serverResult.message, isError: true);
         return;
       }
 
       await AppDatabase.instance.insertUser(fullName: fullName, email: email, phone: phone, password: password);
+      if (serverResult.serverReached && serverResult.ok) {
+        await AppDatabase.instance.markUserSynced(email);
+      }
+
       await AppColors.changeTheme(_selectedThemeColor);
 
       final prefs = await SharedPreferences.getInstance();
@@ -532,11 +551,16 @@ class _SignupScreenState extends State<SignupScreen> {
 
       await _saveMedicalInformation(fullName, email);
 
+      // Upload all saved signup/profile/settings data now when XAMPP is reachable.
+      // If offline, SyncService keeps local data and silently retries from Home/History later.
+      await SyncService.syncProfile();
+      await SyncService.syncIncidents();
+
       if (!mounted) return;
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
     } catch (e) {
       if (mounted) setState(() => isSaving = false);
-      _showSnack('Signup error: $e');
+      _showSnack('Signup error: $e', isError: true);
     }
   }
 

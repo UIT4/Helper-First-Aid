@@ -475,6 +475,55 @@ class AppDatabase {
     }, conflictAlgorithm: ConflictAlgorithm.abort);
   }
 
+
+  Future<void> insertOrUpdateUser({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    int pendingSync = 1,
+  }) async {
+    final db = await database;
+    final normalizedEmail = email.trim().toLowerCase();
+    final existing = await getUserByEmail(normalizedEmail);
+
+    final values = {
+      'full_name': fullName.trim(),
+      'email': normalizedEmail,
+      'phone': phone.trim(),
+      'password': password,
+      'pending_sync': pendingSync,
+      'last_sync_at': pendingSync == 0 ? DateTime.now().toIso8601String() : null,
+    };
+
+    if (existing == null) {
+      await db.insert(Tables.users, {
+        ...values,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } else {
+      await db.update(
+        Tables.users,
+        values,
+        where: 'email = ?',
+        whereArgs: [normalizedEmail],
+      );
+    }
+  }
+
+  Future<void> markUserSynced(String email) async {
+    final db = await database;
+    await db.update(
+      Tables.users,
+      {
+        'pending_sync': 0,
+        'last_sync_at': DateTime.now().toIso8601String(),
+      },
+      where: 'email = ?',
+      whereArgs: [email.trim().toLowerCase()],
+    );
+  }
+
   Future<Map<String, dynamic>?> getUserByEmail(String email) async {
     final db = await database;
 

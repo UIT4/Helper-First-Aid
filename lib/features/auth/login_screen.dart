@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/language/app_language.dart';
+import '../../core/network/auth_service.dart';
+import '../../core/network/sync_service.dart';
 import '../home/home_screen.dart';
 import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
@@ -26,7 +28,6 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color background = Color(0xFFF8FAFC);
   static const Color danger = Color(0xFFDC2626);
   static const Color success = Color(0xFF16A34A);
-  static const Color textDark = Color(0xFF0F172A);
   static const Color textMuted = Color(0xFF64748B);
 
   @override
@@ -62,6 +63,12 @@ class _LoginScreenState extends State<LoginScreen> {
     return RegExp(r'^[A-Za-z0-9._%+-]+@gmail\.com$').hasMatch(email);
   }
 
+  bool _isValidPassword(String password) {
+    return RegExp(
+      r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$',
+    ).hasMatch(password);
+  }
+
   Future<void> _login() async {
     final email = _emailCtrl.text.trim().toLowerCase();
     final password = _passwordCtrl.text.trim();
@@ -90,79 +97,92 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    try {
-      final user = await AppDatabase.instance.loginUser(
-        email: email,
-        password: password,
-      );
-
-      if (user != null) {
-        final prefs = await SharedPreferences.getInstance();
-
-        await prefs.setBool('isGuest', false);
-        await prefs.setBool('isLoggedIn', true);
-        await prefs.setString('userEmail', email);
-
-        if (_rememberMe) {
-          await prefs.setBool('rememberMe', true);
-          await prefs.setString('rememberedEmail', email);
-          await prefs.setString('rememberedPassword', password);
-        } else {
-          await prefs.setBool('rememberMe', false);
-          await prefs.remove('rememberedEmail');
-          await prefs.remove('rememberedPassword');
-        }
-
-        if (!mounted) return;
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
-
-        return;
-      }
-    } catch (_) {}
-
-    final prefs = await SharedPreferences.getInstance();
-
-    final localEmail =
-    prefs.getString('rememberedEmail')?.trim().toLowerCase();
-
-    final localPassword =
-    prefs.getString('rememberedPassword')?.trim();
-
-    if (localEmail == email && localPassword == password) {
-      await prefs.setBool('isGuest', false);
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('userEmail', email);
-
-      if (!mounted) return;
-
+    if (!_isValidPassword(password)) {
       _showSnack(
         AppLanguage.text(
           context,
-          'Offline login successful',
-          'تم تسجيل الدخول بدون إنترنت',
+          'Password must be 8+ chars with letters, numbers, and special character',
+          'كلمة المرور يجب أن تكون 8 خانات على الأقل وتحتوي حرف ورقم ورمز',
         ),
+        isError: true,
       );
+      return;
+    }
 
+    final localUser = await AppDatabase.instance.loginUser(
+      email: email,
+      password: password,
+    );
+
+    if (localUser != null) {
+      await _saveLoginSession(email, password);
+
+      // App is offline-first: local login is allowed immediately.
+      // If XAMPP/API is reachable, confirm the account and upload pending profile/incidents.
+      final serverResult = await AuthService.login(email: email, password: password);
+      if (serverResult.serverReached && serverResult.ok) {
+        await AppDatabase.instance.markUserSynced(email);
+      }
+      await SyncService.syncProfile();
+      await SyncService.syncIncidents();
+
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
+      return;
+    }
 
+    // Fresh install or user created on another device: try XAMPP/API login.
+    final serverResult = await AuthService.login(email: email, password: password);
+
+    if (serverResult.serverReached && serverResult.ok) {
+      final serverUser = serverResult.user ?? {};
+      await AppDatabase.instance.insertOrUpdateUser(
+        fullName: (serverUser['full_name'] ?? serverUser['name'] ?? '').toString(),
+        email: (serverUser['email'] ?? email).toString(),
+        phone: (serverUser['phone'] ?? '').toString(),
+        password: password,
+        pendingSync: 0,
+      );
+
+      await _saveLoginSession(email, password);
+      await SyncService.syncProfile();
+      await SyncService.syncIncidents();
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
       return;
     }
 
     _showSnack(
-      AppLanguage.text(
-        context,
-        'Wrong email or password',
-        'الإيميل أو كلمة المرور غير صحيحة',
-      ),
+      serverResult.serverReached
+          ? AppLanguage.text(context, 'Wrong email or password on server', 'الإيميل أو كلمة المرور غير صحيحة على السيرفر')
+          : AppLanguage.text(context, 'No local account found and XAMPP server is offline', 'لا يوجد حساب محلي والسيرفر غير متصل'),
       isError: true,
     );
+  }
+
+  Future<void> _saveLoginSession(String email, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setBool('isGuest', false);
+    await prefs.setBool('isLoggedIn', true);
+    await prefs.setString('userEmail', email);
+
+    if (_rememberMe) {
+      await prefs.setBool('rememberMe', true);
+      await prefs.setString('rememberedEmail', email);
+      await prefs.setString('rememberedPassword', password);
+    } else {
+      await prefs.setBool('rememberMe', false);
+      await prefs.remove('rememberedEmail');
+      await prefs.remove('rememberedPassword');
+    }
   }
 
   Future<void> _guestLogin() async {
@@ -255,7 +275,7 @@ class _LoginScreenState extends State<LoginScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
       ),
       child: Column(
         children: [
@@ -289,6 +309,15 @@ class _LoginScreenState extends State<LoginScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 6),
+          Text(
+            AppLanguage.text(
+              context,
+              'Instant emergency help',
+              'مساعدة فورية في الحالات الطارئة',
+            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 15),
+          ),
         ],
       ),
     );
@@ -317,9 +346,56 @@ class _LoginScreenState extends State<LoginScreen> {
             obscure: true,
           ),
           const SizedBox(height: 8),
+          _buildRememberAndForgotRow(),
+          const SizedBox(height: 8),
           _buildLoginButton(),
+          const SizedBox(height: 18),
+          const Divider(),
+          _buildCreateAccountButton(),
+          const Divider(),
+          _buildGuestButton(),
         ],
       ),
+    );
+  }
+
+  Widget _buildRememberAndForgotRow() {
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      runSpacing: 4,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Checkbox(
+              value: _rememberMe,
+              activeColor: primary,
+              visualDensity: VisualDensity.compact,
+              onChanged: (v) {
+                setState(() {
+                  _rememberMe = v ?? false;
+                });
+              },
+            ),
+            Text(
+              AppLanguage.text(context, 'Remember', 'تذكرني'),
+              style: const TextStyle(fontSize: 13),
+            ),
+          ],
+        ),
+        TextButton(
+          onPressed: _forgotPassword,
+          child: Text(
+            AppLanguage.text(context, 'Forgot Password?', 'نسيت كلمة المرور؟'),
+            style: const TextStyle(
+              color: Color(0xFF334155),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -331,6 +407,7 @@ class _LoginScreenState extends State<LoginScreen> {
         onPressed: _login,
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
+          elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
@@ -342,6 +419,53 @@ class _LoginScreenState extends State<LoginScreen> {
             fontSize: 17,
             fontWeight: FontWeight.bold,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreateAccountButton() {
+    return TextButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SignupScreen()),
+        );
+      },
+      child: Text(
+        AppLanguage.text(context, 'CREATE ACCOUNT', 'إنشاء حساب'),
+        style: TextStyle(
+          color: primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuestButton() {
+    return TextButton(
+      onPressed: _guestLogin,
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: AppLanguage.text(context, 'FIRST HELP? ', 'مساعدة أولية؟ '),
+              style: const TextStyle(
+                color: danger,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextSpan(
+              text: AppLanguage.text(context, 'CLICK HERE', 'اضغط هنا'),
+              style: const TextStyle(
+                color: danger,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -362,7 +486,6 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: Icon(icon, color: textMuted),
-
         suffixIcon: obscure
             ? IconButton(
           icon: Icon(
@@ -378,7 +501,6 @@ class _LoginScreenState extends State<LoginScreen> {
           },
         )
             : null,
-
         filled: true,
         fillColor: const Color(0xFFF1F5F9),
         contentPadding: const EdgeInsets.symmetric(vertical: 16),
