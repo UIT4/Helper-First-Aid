@@ -71,7 +71,7 @@ The **Helper First Aid** system consists of three main components:
 
 * **Flutter Mobile Application** — User-facing emergency assistance application.
 * **PHP Dashboard** — Administrative dashboard for managing emergency content and backend services.
-* **AI Module** — Supports intelligent emergency case recognition and first aid guidance.
+* **n8n Automation Workflows** — Supports intelligent emergency case recognition and first aid guidance.
 
 ---
 
@@ -125,6 +125,10 @@ flutter run
 **PHP Dashboard**
 
 https://github.com/LASE3/Helper-First-Aid-PHP-Dashboard-
+
+**n8n Automation Workflows**
+
+https://github.com/mohammadnemer10/Automation-for-Helper-First-Aid-App.git
 
 ---
 
