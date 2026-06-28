@@ -6,6 +6,12 @@ The application combines mobile technologies, artificial intelligence, and offli
 
 ---
 
+## Project Status
+
+This mobile application is functionally complete as a graduation project, but it is still under development and may receive future improvements, UI refinements, performance updates, and additional emergency features.
+
+---
+
 ## Features
 
 * AI-assisted emergency case identification
