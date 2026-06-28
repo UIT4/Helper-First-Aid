@@ -143,13 +143,6 @@ Direct edits, pushes, and branch creation in the original repository are restric
 
 ---
 
-## Repository Access
-
-This repository is public for viewing and downloading purposes.  
-Direct edits, pushes, and branch creation in the original repository are restricted to the project owner/collaborators only.
-
----
-
 ## Status
 
 This project was developed as a graduation project at Zarqa University and demonstrates practical experience in Flutter, full-stack development, REST APIs, mobile application development, and artificial intelligence.
